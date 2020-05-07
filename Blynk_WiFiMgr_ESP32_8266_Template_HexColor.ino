@@ -6,30 +6,49 @@
 // Sketch uses Arduino IDE-selected ESP32 and ESP8266 to select compile choices
 
 
-/*  This is a DEMO program for the powerful Blynk_WiFiManager (WM) library for ESP32 and ESP8266
- *   LIbrary written and maintained by Khoi Hoang. 
- *  See Github for much more info on this library https://github.com/khoih-prog/Blynk_WM
- *  
- *   *  
- *  
- *  /////////////////////////////////////////////////////////////////////////////////////////////////
- *  This demo sketch written by Thor Johnson May 2020 as a template for Blynk Wifi ESP communications
- *  This sketch also demonstrates the BLYNK_WRITE_DEFAULT() capability to generalize Virtual Pin handling  
- *  
- *  From a Blynk app, input a color from the ZeRGBa. It colors the LED and displays the Hex value of the color
- *  
- *  It wants to see 3 Blynk Widgets
- *  - a ZeRGBa color selector (default on V2) 
- *    SET TO MERGE (REQUIRED), RANGE 0-255 (REQUIRED), AND TO SEND VALUES ON RELEASE ONLY (PERFORMANCE)
- *  - a LED (default on V3)
- *  - a Value Display (default on V4) 
- *  
- *  The WM Config Portal can change the Virtual Pin numbers and the Widget labels.
- *  See, I told you it was simple.  
- *  
- *  This template is a basis for all my Blynk ESP sketches. See Sonoff sketch in examples.  
+/*  
+ * The Arduino/Blynk sketch Blynk_WiFiMgr_ESP32_8266_Template_HexColor.ino is a fully-developed 
+ * get-started demo program for the powerful BlynkSimpleEsp... and the newer WiFiManager (WM) libraries. 
+ * See https://github.com/thorathome/Blynk_Examples
+ * 
+ * It demonstrates
+ * * WiFiManager Config Portal configuration and use
+ * * WiFiManager Dynamic (extended) Parameters configuration and use
+ * * Use of compiler constants for compile-time selection
+ * * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
+ *
+ * This sketch lets end-users choose a color using ZeRGBa, colors a blinking (heartbeat) LED, 
+ * and shows the HEX code for that color.
+ *
+ * It requires:
+ * * Blynk ZeRGBa configured in MERGE mode with values between 0 and 255
+ * * Blynk LED
+ * * Blynk Value Display
+ * * Blynk master library installed
+ * * Blynk_WiFiManager installed
+ * * ESP32 or ESP8266 devices
+ *
+ * As in all Blynk sketches using WiFi, you will need
+ * * Your WiFi SSID or SSIDs and passwords
+ * * Your Blynk authcode or authcodes
+ * * Your Blynk server URL (Main US Blyk server is blynk-cloud.com.)
+ *
+ * These values do not need to be coded into the sketch as they may be entered at runtime (once) 
+ * into the Config Portal.
+ *
+ * You also do not have to hardcode the Virtual Pins for the ZeRGBa, LED or Value Display, 
+ * can input them at runtime using the Config Portal. 
+ * This sketch uses Blynk's BLYNK_WRITE_DEFAULT() capability to deliver this flexibility. 
+ * I use this approach to manage a number of similar wireless controls like SONOFFs.
+ *
+ * The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 12345678 
+ * and IP address of 192,168,220,1. 
+ * These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch 
+ * (but could be made selectable in the Config Portal, itself.)
+ *
+ * I hope this is as useful to you as it has been to me to understand Blynk, 
+ * the BlynkSimpleEsp... and ...WiFiManager libraries, the ESP32 and ESP8266.
  */
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// COMPILER SWITCH SELECTION - USE WIFI MANAGER OR NOT //////////////////////////////////
