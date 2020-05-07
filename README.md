@@ -12,8 +12,10 @@ It requires:
  * Blynk ZeRGBa configured in MERGE mode with values between 0 and 255
  * Blynk LED
  * Blynk Value Display
+ * Blynk master library installed
+ * Blynk_WiFiManager installed
  
- As in all Blynk sketches using WiFi, you will need
+As in all Blynk sketches using WiFi, you will need
  * Your WiFi SSID or SSIDs and passwords
  * Your Blynk authcode or authcodes
  * Your Blynk server URL (Main US Blyk server is blynk-cloud.com.)
