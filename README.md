@@ -14,6 +14,7 @@ It requires:
  * Blynk Value Display
  * Blynk master library installed
  * Blynk_WiFiManager installed
+ * ESP32 or ESP8266 devices
  
 As in all Blynk sketches using WiFi, you will need
  * Your WiFi SSID or SSIDs and passwords
