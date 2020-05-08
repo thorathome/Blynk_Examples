@@ -640,17 +640,4 @@ BLYNK_APP_CONNECTED()
 {
   Serial.println ( "\nBLYNK_APP_CONNECTED..." );  
 
-  #if USE_WM && USE_DYNAMIC_PARAMETERS // ACKNOWLEDGE THE VALUES FROM CONFIG PORTAL // debugging
-    Serial.print ( "controlVpin=<" ); Serial.print ( controlVpin ); 
-      Serial.print ( ">, label=<" ); Serial.print ( controlLabel ); 
-    Serial.print ( ">, heartbeatVpin=<" ); Serial.print ( heartbeatVpin ); 
-      Serial.print ( ">, label=<" ); Serial.print ( heartbeatLabel ); Serial.println ( ">\n" );  
-    Serial.print ( ">, displayVpin=<" ); Serial.print ( displayVpin ); 
-      Serial.print ( ">, display=<" ); Serial.print ( displayLabel ); Serial.println ( ">\n" );  
-      
-    Blynk.setProperty ( controlVpin, "label", controlLabel );
-    Blynk.setProperty ( heartbeatVpin, "label", heartbeatLabel );
-    Blynk.setProperty ( displayVpin, "label", displayLabel );
-
-   #endif
 } // end BLYNK_CONNECTED
