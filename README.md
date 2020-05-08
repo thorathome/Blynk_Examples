@@ -1,4 +1,4 @@
-# Blynk_Examples
+# Detailed Blynk WiFi Examples
 
 The Arduino/Blynk sketch **Blynk_WiFiMgr_ESP32_8266_Template_HexColor.ino** is a fully-developed get-started demo program for the powerful BlynkSimpleEsp... and the newer WiFiManager (WM) libraries. It demonstrates 
  * **WiFiManager Config Portal** configuration and use
