@@ -612,7 +612,7 @@ void updateDynamicParameters()
 
   Serial.println();  
 } // end updateDynamicParameters
-#endif (updateDynamicParameters not needed if NOT USE_WM)
+#endif // (updateDynamicParameters not needed if NOT USE_WM)
 
 
 
