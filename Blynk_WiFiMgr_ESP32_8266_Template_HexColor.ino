@@ -606,7 +606,7 @@ void updateDynamicParameters()
     Serial.print ( "**** Bad displayVpin input value of " );
     Serial.println ( displayVpinC );
   }
-  Serial.print ( "   Set displayVpin/heartbeatLabel to " ) ; Serial.print ( displayVpin );
+  Serial.print ( "   Set displayVpin/displayLabel to " ) ; Serial.print ( displayVpin );
   Serial.print ( "/" ); Serial.println ( displayLabel );   
   Blynk.setProperty ( displayVpin, "label", displayLabel );  
 
@@ -640,4 +640,4 @@ BLYNK_APP_CONNECTED()
 {
   Serial.println ( "\nBLYNK_APP_CONNECTED..." );  
 
-} // end BLYNK_CONNECTED
+} // end BLYNK_APP_CONNECTED
