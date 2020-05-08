@@ -19,7 +19,7 @@ It requires:
 As in all Blynk sketches using WiFi, you will need
  * Your WiFi SSID or SSIDs and passwords
  * Your Blynk authcode or authcodes
- * Your Blynk server URL (Main US Blyk server is blynk-cloud.com.)
+ * Your Blynk server URL (Main US Blynk server is blynk-cloud.com.)
  
 These values do not need to be coded into the sketch as they may be entered at runtime (once) into the Config Portal.
  
