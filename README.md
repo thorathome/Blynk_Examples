@@ -13,7 +13,7 @@ It requires:
  * Blynk LED
  * Blynk Value Display
  * Blynk master library installed
- * Blynk_WiFiManager installed
+ * Blynk_WiFiManager library installed
  * ESP32 or ESP8266 devices
  
 As in all Blynk sketches using WiFi, you will need
