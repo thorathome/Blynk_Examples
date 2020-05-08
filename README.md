@@ -24,9 +24,9 @@ As in all Blynk sketches using WiFi, you will need
 These values do not need to be coded into the sketch as they may be entered at runtime (once) into the Config Portal.
  
 You also do not have to hardcode the Virtual Pins for the ZeRGBa, LED or Value Display, can input them at runtime using the Config Portal.
-This sketch uses Blynk's BLYNK_WRITE_DEFAULT() capability to deliver this flexibility. I use this approach to manage a number of similar wireless controls like SONOFFs.  
+This sketch uses Blynk's BLYNK_WRITE_DEFAULT() capability to deliver this flexibility. I use this approach to manage a number of similar wireless controls like SONOFFs with the same sketch.  
  
-The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 12345678 and IP address of 192,168,220,1. 
+The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 12345678 and IP address of 192.168.220.1. 
 These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch (but could be made selectable in the Config Portal, itself.)
  
  I hope this is as useful to you as it has been to me to understand Blynk, the BlynkSimpleEsp... and ...WiFiManager libraries, the ESP32 and ESP8266.  
