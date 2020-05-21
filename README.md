@@ -3,6 +3,7 @@
 The Arduino/Blynk sketch **Blynk_WM_Template.ino** is a fully-developed get-started demo program for the powerful BlynkSimpleEsp... and the newer WiFiManager (WM) libraries. It demonstrates 
  * **WiFiManager Config Portal** configuration and use
  * **WiFiManager Dynamic (extended) Parameters** configuration and use
+ * **LittleFS file system for ESP8266** is an option along with EEPROM and the soon-to-be deprecated SPIFFS
  * Use of **compiler constants** for compile-time selection
  * Use of Blynk's **BLYNK_WRITE_DEFAULT()** flexible capability
  
@@ -30,5 +31,7 @@ The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 1234
 These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch (but could be made selectable in the Config Portal, itself.)
  
  I hope this is as useful to you as it has been to me to understand Blynk, the BlynkSimpleEsp... and ...WiFiManager libraries, the ESP32 and ESP8266.  
+ 
+ **Thanks to @khoih-prog for updating this example to include LittleFS and for writing the powerful WiFiManager library**
  
  
