@@ -34,7 +34,7 @@ This sketch uses Blynk's BLYNK_WRITE_DEFAULT() capability to deliver this flexib
 The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 12345678 and IP address of 192.168.220.1. 
 These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch (but could be made selectable in the Config Portal, itself.)
  
- I hope this is as useful to you as it has been to me to understand Blynk, the BlynkSimpleEsp... and ...WiFiManager libraries, the ESP32 and ESP8266.  
+I hope this is as useful to you as it has been to me to understand Blynk, the BlynkSimpleESP... and ...WiFiManager libraries, the ESP32 and ESP8266.  
  
  **Thanks to @khoih-prog (@khoih on Blynk Community) for updating this example to include LittleFS and for writing the powerful WiFiManager library**
 
