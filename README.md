@@ -47,4 +47,16 @@ To use easily (**Thanks to Andreas Spiess on YouTube for this hint!**)
 * Download MY_BLYNK_COLORS.h into the MY_BLYNK_COLORS folder.
 * Use **#include "MY_BLYNK_COLORS.h"** in your sketch to get these color samples easily.  
 
+
+## ESP_LED_BUILTINS.h
+When I found out that the Arduino ESP8266 libraries have the LED_BUILTIN inverted (HIGH is LOW and LOW is HIGH - ugh.)
+I built this little code snippet. 
+
+So place this file in your Arduino/libraries folder and put **#include "ESP_LED_BUILTINS.h"** in your sketch.
+Use LED_BUILTIN_HIGH for HIGH and LED_BUILTIN_LOW for LOW and it will work with either ESP platform.  
+
+Also, I found that some ESP32s do not have a LED-BUILTIN defined in the Arduino board library. LED_BUILTIN is 13 for ESP32.
+
+
+
 All comments welcome....
