@@ -4,6 +4,8 @@
  * This demo sketch written by Thor Johnson (https://github.com/thorathome) May 2020 as a template for
  * Blynk Wifi ESP communications. See https://github.com/thorathome/Blynk_Examples
  * 
+ * Updated 27 June 2020 - bug fixes, updating USE_DEFAULT_DATA (WM libaray) documentation
+ * 
  * It demonstrates
  * * WiFiManager Config Portal configuration and use
  * * WiFiManager Dynamic (extended) Parameters configuration and use
