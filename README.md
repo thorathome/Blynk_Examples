@@ -1,6 +1,7 @@
 # Blynk WiFi & Color Templates and Helper Examples
 
 ## Blynk_WiFiManager template and Color selector example
+Updated 27 June 2020 to Blynk_WiFiManager (WM) library update 1.0.16
 
 The Arduino/Blynk sketch **Blynk_WM_Template.ino** is a fully-developed get-started demo program for the powerful BlynkSimpleESP... and the newer WiFiManager (WM) libraries.**It is also a Blynk HEX color selector.**
 
