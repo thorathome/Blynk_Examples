@@ -80,21 +80,23 @@
 
 #if USE_WM
   ///////////////////////////////////////////////////////////////////////////////////////////
-  //// COMPILER SWITCH SELECTION - USE DEFAULT CONFIG PORTAL FIELD DATA OR NOT //////////////
-  //// SELECT IF YOU WANT CONFIG PORTAL FIELDS INITIALIZED TO SOMETHING OTHER THAN BLANK ////
-  #define USE_DEFAULT_CONFIG_DATA true  // Used mostly for development and debugging. FORCES default values to be loaded each run.
-  //#define USE_DEFAULT_CONFIG_DATA false   // Used mostly once debugged. Assumes good data already saved in device.  
-
-
-  ///////////////////////////////////////////////////////////////////////////////////////////
   //// COMPILER SWITCH SELECTION - USE DYNAMIC (CUSTOM) CONFIG PORTAL FIELDS OR NOT /////////
   #define USE_DYNAMIC_PARAMETERS true
   //#define USE_DYNAMIC_PARAMETERS false
 
   
   ///////////////////////////////////////////////////////////////////////////////////////////
-  //// COMPILER SWITCH SELECTION - USE LITTLEFS (ESP8266 ONLY), SPIFFS OR EEPROM /////////////////////////////////////
-  //// only relevant if using WiFiManager _WM
+  //// COMPILER SWITCH SELECTION - USE DEFAULT CONFIG PORTAL FIELD DATA OR NOT //////////////
+  //// WIFI_MANAGER USES THE CONFIG DATA STORED ON THE DEVICE.                           ////
+  ////   IF THERE IS NO GOOD DATA OR WM CANNOT CONNECT TO WIFI OR TO BLYNK,              ////
+  ////   THE CONFIG PORTAL ACTIVATES AUTOMATICALLY
+  //// USE_DEFAULT_CONFIG_DATA FORCES THE USE OF YOUR CODED CONFIG DATA EACH TIME        ////
+  #define USE_DEFAULT_CONFIG_DATA true  // Used mostly for development and debugging. FORCES default values to be loaded each run.
+  //#define USE_DEFAULT_CONFIG_DATA false   // Used mostly once debugged. Assumes good data already saved in device.  
+
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  //// COMPILER SWITCH SELECTION - CHOOSE: WF TO USE LITTLEFS (ESP8266 ONLY), SPIFFS OR EEPROM ////////////
   
   #ifdef ESP8266
     // #define USE_SPIFFS and USE_LITTLEFS   false        => using EEPROM for configuration data in WiFiManager
@@ -155,13 +157,11 @@
   // (from the Github doc)
   // Blynk tries to reconnect X times before posting the Config Portal. Default is 10. I like 3.  
   #define CONFIG_TIMEOUT_RETRYTIMES_BEFORE_RESET    3  // Library default is 10 (times 2) - DEBUG SET AT 2
-
-  #define TIMEOUT_RECONNECT_WIFI                    10000L
   #define RESET_IF_CONFIG_TIMEOUT                   true
 
 
   // NOT NECESSARY TO MODIFY
-  // COMPILE-TIME LOGIC: AUTOMATIC LIBRARY SELECTION 
+  // COMPILE-TIME LOGIC: AUTOMATIC WIFI LIBRARY SELECTION 
   #if USE_SSL
     #if ESP8266
       #include <BlynkSimpleEsp8266_SSL_WM.h>
@@ -209,7 +209,9 @@
   #define DEVICE_HOST_NAME "Blynk_WM_Template"  // DHCP Host name for device
 
 
-  #if USE_DEFAULT_CONFIG_DATA // FORCE default values for "standard" fields presented in Config Portal
+  #if USE_DEFAULT_CONFIG_DATA // FORCE default values for fields presented in Config Portal
+  // This feature is primarily used in development to force a known set of values as Config Data
+  // It will NOT force the Config Portal to activate. Use DRD or erase Config Data with Blynk.clearConfigData()
     bool LOAD_DEFAULT_CONFIG_DATA = true;  //do not modify - used by library
     
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -251,7 +253,7 @@
       ///////////////////////////////////////////////////////////////////////////////////////////
       //// COMPILER SWITCH SELECTIONS - SET DEFAULT BOARD NAME //////////////////////////////////
       //char board_name     [24];
-      "WiFiManager",                    // Config Portal Board Name field value
+      "Blynk_WM_Template",              // Config Portal Board Name field value
     
       // terminate the list
       //int  checkSum, dummy, not used
@@ -260,10 +262,10 @@
     };
    
   #else // not using USE_DEFAULT_CONFIG_DATA 
-    // Set up the "standard" Config Portal fields
+    // Set up the Config Portal fields
     bool LOAD_DEFAULT_CONFIG_DATA = false;
     
-    // AUTOMATICALLY GENERATE THE "STANDARD"CONFIG PORTAL DATA STRUCTURE
+    // AUTOMATICALLY GENERATE THE CONFIG PORTAL DATA STRUCTURE
     // NOT NECESSARY TO MODIFY
     Blynk_WM_Configuration defaultConfig;  // loads the default Config Portal data type with blank defaults  
   #endif
@@ -335,6 +337,7 @@
     // NOT NECESSARY TO MODIFY
     MenuItem myMenuItems [] = {};
     uint16_t NUM_MENU_ITEMS = 0;
+    
   #endif // end USE_DYNAMIC_PARAMETERS    
 
 #else // NOT USING WIFI MANAGER - SET STANDARD WIFI & BLYNK CREDENTIALS, VIRTUAL PIN CHAR VARIABLES
@@ -348,15 +351,18 @@
   //// COMPILER VALUE SELECTION - BLYNK AUTH /////////////////////////////////
   //// Will be used in standard WiFi/begin() and Blynk.config() commands below //////////////
   char blynkAuth[] =      MY_BLYNK_AUTHCODE; // BLYNK Auth 
+#endif
 
+
+#if ! USE_WM || ! USE_DYNAMIC_PARAMETERS // NOT using WifiManager OR NOT using Dynamic Parameters
   // Will be converted to int values in Setup
   char controlVpinC[] =   CONTROL_DEFAULT_VPIN;
   char heartbeatVpinC[] = HEARTBEAT_LED_DEFAULT_VPIN;
   char displayVpinC[] =   DISPLAY_DEFAULT_VPIN;
 
-  // Widget labels
+  // Widget labels when not using WiFIManager or not using Dynamic Parameters
   char controlLabel[] =   "Select a color";
-  char heartbeatLabel[] = "My Beating Heartx";  
+  char heartbeatLabel[] = "My Beating Heart";  
   char displayLabel[] =   "HEX Color Value"; 
 #endif
 
@@ -694,4 +700,3 @@ BLYNK_APP_CONNECTED()
   Serial.println ( "\nBLYNK_APP_CONNECTED..." );  
 
 } // end BLYNK_APP_CONNECTED
-
