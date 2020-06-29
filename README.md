@@ -40,9 +40,31 @@ I hope this is as useful to you as it has been to me to understand Blynk, the Bl
  **Thanks to @khoih-prog (@khoih on Blynk Community) for updating this example to include LittleFS and for writing the powerful WiFiManager library**
 
 
-## MY_WIFI_CREDENTIALS.h
-## MY_BLYNK_CREDENTIALS.h
 
+## MY_WIFI_CREDENTIALS.h
+Quick and easy way to get my personal WiFi credentials out of my code.  
+Download and look at the file for documentation. 
+
+Short story: (**Thanks to Andreas Spiess on YouTube for this hint!**)
+* Create a folder called MY_WIFI_CREDENTIALS inside your libraries folder .  
+* Download MY_WIFI_CREDENTIALS.h into the MY_WIFI_CREDENTIALS folder.
+* Edit the file to show your own WiFi credentials.
+* Use **#include "MY_WIFI_CREDENTIALS.h"** in your sketch.  
+* Use **MY_WIFI_SSID** and **MY_WIFI_PASSWORD** in your sketches instead of your actual SSID and WiFi password. 
+
+
+## MY_BLYNK_CREDENTIALS.h
+Quick and easy way to get my personal Blynk credentials out of my code.  
+Download and look at the file for documentation. 
+
+Short story: (**Thanks to Andreas Spiess on YouTube for this hint!**)
+* Create a folder called MY_BLYNK_CREDENTIALS inside your libraries folder.  
+* Download MY_BLYNK_CREDENTIALS.h into the MY_BLYNK_CREDENTIALS folder.
+* Edit the file to show your own Blynk credentials.
+* Use descriptive names in the #define statements, names you can remember and use in your sketches.
+* Use **#include "MY_BLYNK_CREDENTIALS.h"** in your sketch.  
+* Do not forget to **#define MY_BLYNK_AUTHCODE whatever-descriptive-name-you-need** in your code.
+* Use **MY_BLYNK_SERVER** and **MY_BLYNK_AUTHCODE** in your sketches instead of your actual Blynk info. 
 
 
 ## MY_BLYNK_COLORS.h
