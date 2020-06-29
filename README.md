@@ -40,6 +40,11 @@ I hope this is as useful to you as it has been to me to understand Blynk, the Bl
  **Thanks to @khoih-prog (@khoih on Blynk Community) for updating this example to include LittleFS and for writing the powerful WiFiManager library**
 
 
+## MY_WIFI_CREDENTIALS.h
+## MY_BLYNK_CREDENTIALS.h
+
+
+
 ## MY_BLYNK_COLORS.h
 I've seen on Blynk many questions and confusions about HEX color codes. Here is a small set of helpful colors I often use.  I'll expand these as I create more. 
 
