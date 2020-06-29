@@ -1,25 +1,23 @@
 /* MY_BLYNK_CREDENTIALS.h
  * 
- * Since Blynk requires a different Blynk Authcode for every  
- * device on every Blynking panel,
+ * Since Blynk requires a different Blynk Authcode for every device on every Blynking panel,
  * I end up with a lot of Blynking Authcodes. 
  *
- * A simple way to manage all the Blynk Authcodes you will likely 
- * generate...
- * * Put them all in a file you can #include in your Arduino sketches. 
+ * A simple way to manage all the Blynk Authcodes you will likely generate...
+ * * Put them all in a library file you can #include in your Arduino sketches. 
  * * Name each of the Blynk Authcodes with a helpful name.
  * * Select the right Blynk Authcode in each sketch without having to hard-code it.
  * 
  * Here's how...
- * * Create a new folder called MY_BLYNK_CREDENTIALS in the Arduino/libraries folder
- * * Create a text file named MY_BLYNK_CREDENTIALS.h 
+ * * Create a new folder called MY_BLYNK_CREDENTIALS in your Arduino/libraries folder
+ * * Create a new text file named MY_BLYNK_CREDENTIALS.h 
  *   (Same as as the folder. The .h is important.)
  * 
  * * Use this as a template.
- * * Edit in your own Blynk Authcodes with descriptive names for each project or device
+ * * Edit in your own Blynk Authcodes with descriptive names for each of your projects or devices
  */ 
 
-#define MY_BLYNK_SERVER "blynk-cloud.com" 
+#define MY_BLYNK_SERVER "blynk-cloud.com" // You may or may not need this depending on your code
 
 // From my Blynk Panel 1 ( 3 devices )
 #define MY_EXTERIOR_TEMP_AUTHCODE "wtxxxxxxxxxxxxxxxxxxxxxxxxxxxxBS"  // Use your real Blynk Authcode here
@@ -38,14 +36,14 @@
 #define MY_REAL_SONOFF_AUTHCODE   "Geddddddddddddddddddddddddddddqc"  // Use your real Blynk Authcode here
 
 /*
- * * With the library file in place, restart your Arduino IDE.
+ * * Once this library file is in place, restart your Arduino IDE.
  * * In each Arduino sketch, add the line 
  *   #include "MY_BLYNK_AUTHCODES.h" // Use quotes " here.
- * * In all your sketches say something like 
+ * * In all your sketches write something like 
  *   #define MY_BLYNK_AUTHCODE MY_BARO_AUTHCODE //from your .h file. 
  * * Write each sketch to use MY_BLYNK_AUTHCODE throughout the sketch 
  *   instead of a hard-coded Blynk Authcode. 
- * * At the top of each sketch use the #define command to set the
+ * * Right after the #include "MY_BLYNK_AUTHCODES.h" statement, write a #define command to choose the
  *   correct Blynk Authcode. 
  * * Compile and go
  * 
@@ -56,6 +54,3 @@
  * * If you ever have to publish your code, your Blynk Authcodes are not visible to everyone.
  * * You will be happier in life.
  */
-
-
-
