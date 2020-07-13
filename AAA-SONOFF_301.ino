@@ -6,22 +6,34 @@
 #endif
 
 #define BLYNK_PRINT       Serial  // Generates Blynk debug prints. Comment out if not needed, saving space
-#define BLYNK_WM_DEBUG    0
+#define BLYNK_WM_DEBUG    3       // 0 - 3
 
 #include "MY_WIFI_CREDENTIALS.h"   // #defines MY_WIFI_SSID AND MY_WIFI_PASSWORD
 #include "MY_BLYNK_CREDENTIALS.h"  // #defines MY_BLYNK_SERVER and MY_xxx_AUTHCODE
 #include "ESP_LED_BUILTINS.h"      // #defines LED_BUILTIN_HIGH and _LOW for uniform use across devices
 #include "MY_BLYNK_COLORS.h"       // #defines a bunch of handy Blynk colors
 
-//#define REAL_SONOFF true   // Sets device name, onboard LED hardware pin and the relay checker
-#define REAL_SONOFF false   // Sets device name, onboard LED hardware pin and the relay checker
+#define REAL_SONOFF true   // Sets device name, onboard LED hardware pin and the relay checker
+//#define REAL_SONOFF false   // Sets device name, onboard LED hardware pin and the relay checker
 
 #if REAL_SONOFF
-  #define MY_BLYNK_AUTHCODE MY_REAL_SONOFF_AUTHCODE 
-  #define SONOFF_DEVICE_NAME "CURLY" // "LARRY"  "CURLY"  "MOE" 
+  #define LARRY true
+  #define CURLY false
+  #define MOE   false
+  
+  #define MY_BLYNK_AUTHCODE MY_REAL_SONOFF_AUTHCODE  
+  #if LARRY
+    #define SONOFF_DEVICE_NAME "LARRY"   // "LARRY"  "CURLY"  "MOE" 
+  #elif CURLY
+    #define SONOFF_DEVICE_NAME "CURLY"   // "LARRY"  "CURLY"  "MOE" 
+  #elif MOE
+    #define SONOFF_DEVICE_NAME "MOE"     // "LARRY"  "CURLY"  "MOE" 
+  #endif  
+    // REAL_SONOFF also causes the SONOFF relay to be read
 #else
   #define MY_BLYNK_AUTHCODE MY_WORKING_SONOFF_AUTHCODE   
   #define SONOFF_DEVICE_NAME "SONOFF-DEV"
+    // not REAL_SONOFF causes the relay to always match the button setting
 #endif
 
 // SONOFF ESP8266 HARDWARE PINS
@@ -57,6 +69,8 @@
  * * Blynk Button in SWITCH mode
  * * Blynk LED
  * * Blynk Value Display
+ * * (optional) Blynk Button to force the WiFi Manager Config Portal to reset
+ *              The DRD (Double Reset Detector) can do the same thing.
  * * Blynk master library installed
  * * Blynk_WiFiManager installed
  * * SONOFF Basic (ESP8266) device and the ability to flash it. (See elsewhere.)  
@@ -83,13 +97,6 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//// COMPILER SWITCH SELECTION - USE WIFI MANAGER OR NOT //////////////////////////////////
-#define USE_WM true   // to easily select WiFi Manager or not
-//#define USE_WM false   // to easily select WiFi Manager or not
-// REMEMBER: not using _WM means we make our own initial WiFi connection
-
-
-///////////////////////////////////////////////////////////////////////////////////////////
 //// COMPILER SWITCH SELECTION - USE SSL OR NOT ///////////////////////////////////////////
 #define USE_SSL true // to easily select SSL or not
 //#define USE_SSL false // to easily select SSL or not
@@ -97,11 +104,28 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// COMPILER VALUE SELECTION - VIRTUAL PINS FOR THE 3 WIDGETS ////////////////////////////
-// Larry is 20-23, Curly is 30-33, Moe is 40-43
-#define CONTROL_DEFAULT_VPIN       "40"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
-#define HEARTBEAT_LED_DEFAULT_VPIN "41"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
-#define DISPLAY_DEFAULT_VPIN       "42"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
-#define RESET_DEFAULT_VPIN         "43"  // "Invisible" widget to clear the Config Portal values
+//// I use three different devices, have named them from my childhood
+// Larry is 20-23, Curly is 40-43, Moe is 30-33
+
+  #if LARRY
+    // LARRY
+    #define CONTROL_DEFAULT_VPIN       "20"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define HEARTBEAT_LED_DEFAULT_VPIN "21"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define DISPLAY_DEFAULT_VPIN       "22"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define RESET_DEFAULT_VPIN         "23"  // "Invisible" widget to clear the Config Portal values
+  #elif CURLY
+    // CURLY
+    #define CONTROL_DEFAULT_VPIN       "40"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define HEARTBEAT_LED_DEFAULT_VPIN "41"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define DISPLAY_DEFAULT_VPIN       "42"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define RESET_DEFAULT_VPIN         "43"  // "Invisible" widget to clear the Config Portal values
+  #elif MOE
+    // MOE
+    #define CONTROL_DEFAULT_VPIN       "30"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define HEARTBEAT_LED_DEFAULT_VPIN "31"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define DISPLAY_DEFAULT_VPIN       "32"  // Can also be changed via Config Portal (USE_DYNAMIC_PARAMETERS)
+    #define RESET_DEFAULT_VPIN         "33"  // "Invisible" widget to clear the Config Portal values
+  #endif
 // These can all be reset using Config Portal. I have included them as default values only. */ 
 
 
@@ -153,84 +177,74 @@
 #endif
 
 
-#if USE_WM
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  //// COMPILER VALUE SELECTION - CONFIG PORTAL'S OWN SSID AND password /////////////////////
-  //// Config Portal turns on when WiFiManager cannot connect to WiFi or Blynk
-  //// only relevant if using WiFiManager _WM
-  #define CONFIG_PORTAL_SSID      "ConfigSONOFF" // SSID for device-generated WiFi beacon
-  #define CONFIG_PORTAL_PASSWORD  "12345678"     // password for device-generated WiFi beacon - 8+ characters
-  #define CONFIG_PORTAL_IPADDRESS 192,168,220,1  // IP address of Config Portal once connected to WiFi beacon
+///////////////////////////////////////////////////////////////////////////////////////////
+//// COMPILER VALUE SELECTION - CONFIG PORTAL'S OWN SSID AND password /////////////////////
+//// Config Portal turns on when WiFiManager cannot connect to WiFi or Blynk
+//// only relevant if using WiFiManager _WM
+#define CONFIG_PORTAL_SSID      "ConfigSONOFF" // SSID for device-generated WiFi beacon
+#define CONFIG_PORTAL_PASSWORD  "12345678"     // password for device-generated WiFi beacon - 8+ characters
+#define CONFIG_PORTAL_IPADDRESS 192,168,220,1  // IP address of Config Portal once connected to WiFi beacon
 
 
-  /////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////
-  #define DEVICE_HOST_NAME SONOFF_DEVICE_NAME  // Shows up in Config Portal as Tab Name
+////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+#define DEVICE_HOST_NAME SONOFF_DEVICE_NAME  // Shows up in Config Portal as Tab Name
                                                // ALSO shows up in Router table as device name
-  // What's the difference between this and Board Name ??
-  /////////////////////////////////////////////////////////////////////
+// What's the difference between this and Board Name ??
+/////////////////////////////////////////////////////////////////////
 
 
-  #if USE_DEFAULT_CONFIG_DATA // Set default values for "standard" fields presented in Config Portal
-    bool LOAD_DEFAULT_CONFIG_DATA = true;  //do not modify - used by library
+#if USE_DEFAULT_CONFIG_DATA // Set default values for "standard" fields presented in Config Portal
+  bool LOAD_DEFAULT_CONFIG_DATA = true;  //do not modify - used by library
+    
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  //// COMPILER SWITCH SELECTIONS - SET DEFAULT VALUES PRESENTED IN CONFIG PORTAL ///////////////
+  //// Data structure AND default values for "standard" fields presented in Config Portal
+  Blynk_WM_Configuration defaultConfig =
+  {
+    // NOT NECESSARY TO MODIFY
+    //char header[16], dummy, not used
+    #if USE_SSL  
+      "SSL",
+    #else
+      "NonSSL",
+    #endif
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //// COMPILER SWITCH SELECTIONS - SET UP TO TWO SSIDs & TWO passwords /////////////////////
+    //WiFi_Credentials  WiFi_Creds  [NUM_WIFI_CREDENTIALS]
+    //WiFi_Creds.wifi_ssid and WiFi_Creds.wifi_pw
+    MY_WIFI_SSID, MY_WIFI_PASSWORD,              // Config Portal WiFi SSID & PWD field values
+    MY_WIFI_SSID, MY_WIFI_PASSWORD,              // Config Portal WiFi SSID & PWD field values
     
     ///////////////////////////////////////////////////////////////////////////////////////////
-    //// COMPILER SWITCH SELECTIONS - SET DEFAULT VALUES PRESENTED IN CONFIG PORTAL ///////////////
-    //// Data structure AND default values for "standard" fields presented in Config Portal
-    Blynk_WM_Configuration defaultConfig =
-    {
-      // NOT NECESSARY TO MODIFY
-      //char header[16], dummy, not used
-      #if USE_SSL  
-        "SSL",
-      #else
-        "NonSSL",
-      #endif
+    //// COMPILER SWITCH SELECTIONS - SET UP TO TWO BLYNK SERVERS & TWO AUTH CODES ////////////
+    // Blynk_Credentials Blynk_Creds [NUM_BLYNK_CREDENTIALS];
+    // Blynk_Creds.blynk_server and Blynk_Creds.blynk_token
+    MY_BLYNK_SERVER, MY_BLYNK_AUTHCODE,  // NEW SONOFF Three Panel
+    MY_BLYNK_SERVER, MY_BLYNK_AUTHCODE,  // NEW SONOFF Three Panel
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      //// COMPILER SWITCH SELECTIONS - SET UP TO TWO SSIDs & TWO passwords /////////////////////
-      //WiFi_Credentials  WiFi_Creds  [NUM_WIFI_CREDENTIALS]
-      //WiFi_Creds.wifi_ssid and WiFi_Creds.wifi_pw
-      MY_WIFI_SSID, MY_WIFI_PASSWORD,              // Config Portal WiFi SSID & PWD field values
-      MY_WIFI_SSID, MY_WIFI_PASSWORD,              // Config Portal WiFi SSID & PWD field values
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //// COMPILER SWITCH SELECTIONS - SET DEFAULT PORTS (FOR SSL OR NON-SSL) //////////////////
+    //int  blynk_port;
+    #if USE_SSL
+      9443,                           // Config Portal Port field (default SSL port) value
+    #else
+      8080,                           // Config Portal Port field (default non-SSL) value
+    #endif
     
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      //// COMPILER SWITCH SELECTIONS - SET UP TO TWO BLYNK SERVERS & TWO AUTH CODES ////////////
-      // Blynk_Credentials Blynk_Creds [NUM_BLYNK_CREDENTIALS];
-      // Blynk_Creds.blynk_server and Blynk_Creds.blynk_token
-      MY_BLYNK_SERVER, MY_BLYNK_AUTHCODE,  // NEW SONOFF Three Panel
-      MY_BLYNK_SERVER, MY_BLYNK_AUTHCODE,  // NEW SONOFF Three Panel
-
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      //// COMPILER SWITCH SELECTIONS - SET DEFAULT PORTS (FOR SSL OR NON-SSL) //////////////////
-      //int  blynk_port;
-      #if USE_SSL
-        9443,                           // Config Portal Port field (default SSL port) value
-      #else
-        8080,                           // Config Portal Port field (default non-SSL) value
-      #endif
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //// COMPILER SWITCH SELECTIONS - SET DEFAULT BOARD NAME //////////////////////////////////
+    //char board_name     [24];
+    "SONOFF_1-2-3",                    // Config Portal Board Name field value
     
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      //// COMPILER SWITCH SELECTIONS - SET DEFAULT BOARD NAME //////////////////////////////////
-      //char board_name     [24];
-      "SONOFF_1-2-3",                    // Config Portal Board Name field value
-    
-      // terminate the list
-      //int  checkSum, dummy, not used
-      0
-      /////////// End Default Config Data /////////////
-    };
+    // terminate the list
+    //int  checkSum, dummy, not used
+    0
+    /////////// End Default Config Data /////////////
+  };
    
-  #else // not using USE_DEFAULT_CONFIG_DATA 
-    // Set up the "standard" Config Portal fields
-    bool LOAD_DEFAULT_CONFIG_DATA = false;
-    
-    // AUTOMATICALLY GENERATE THE "STANDARD"CONFIG PORTAL DATA STRUCTURE
-    // NOT NECESSARY TO MODIFY
-    Blynk_WM_Configuration defaultConfig;  // loads t4he default confir portal data type with blacnk defaults  
-  #endif
-
   
   #if USE_DYNAMIC_PARAMETERS
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -296,7 +310,7 @@
     uint16_t NUM_MENU_ITEMS = sizeof ( myMenuItems ) / sizeof ( MenuItem );  //MenuItemSize;
 
   #else // not using USE_DYNAMIC_PARAMETERS - SET UP NULL (DYNAMIC) MENU
-    #error Must use WM in this sketch
+    #error Must use DYNAMIC PARAMETERS in this sketch
   #endif
 #endif
 
@@ -340,6 +354,12 @@ int flushAtStartupTimerID;
 bool flushAtStartup = true; // FLUSH all BLYNK_WRITEs upon startup (Blynk Bug)
 
 
+
+bool protectSystemState = false; 
+
+
+
+
 // This program is a state machine
 // Pushbutton hits and checkRelay() can change the state
 // updateBlynkWidgets paints the screen based on the state
@@ -351,7 +371,7 @@ bool flushAtStartup = true; // FLUSH all BLYNK_WRITEs upon startup (Blynk Bug)
 #define SYSTEM_ERROR                  6 // ALL SCREWED UP
 int systemState = INITIALIZING; 
 
-// Basic States of the ON/Off Buttoin and the SONOFF Relay
+// Basic States of the ON/Off Button and the SONOFF Relay
 bool controlButtonON = false;   // The initial state of the Widget Button
 bool relayON =         false;   // The initial state of the Relay
 bool switchingRelay =  false;   // Is the relay being switched right now? 
@@ -361,7 +381,7 @@ bool switchingRelay =  false;   // Is the relay being switched right now?
 
 
 // SETUP WIFI, BLYNK, HEARTBEAT
- void setup() 
+void setup() 
 {
   // HELP DEBUG THIS SKETCH WITH GOOD PRINTOUTS
   Serial.begin ( SERIAL_SPEED );
@@ -373,7 +393,6 @@ bool switchingRelay =  false;   // Is the relay being switched right now?
   #endif
   Serial.println();
 
-
   pinMode ( SONOFF_RELAY_PIN, OUTPUT );  
   digitalWrite ( SONOFF_RELAY_PIN, LOW ); // turn that sucker OFF asap 
 
@@ -384,20 +403,24 @@ bool switchingRelay =  false;   // Is the relay being switched right now?
   // There's a Blynk bug that causes all sorts of erroreous BLYNK_WRITEs immediately upon connect
   // This kills all new BLYNK_WRITEs for a second
   flushAtStartup = true;  // Flush everthing BLYNK_WRITE_DEFAULT sees for a second or so at startup
+
   
   systemState = INITIALIZING;  
+  protectSystemState = false;  
+  
   connectToWLANandBlynk();  // Connect to WiFi, then to Blynk server
 
   setupBlynkTimers();  // Establish Blynk timers after Blynk is connected
 
   // Make sure the relay is off (turnSONOFFoff uses a Blynk timer)
-  turnSONOFFoff();  
+  turnSONOFFoff();  // this uses a timer, so timers must be set up in setupBlynkTimers
+  relayON = true; controlButtonON = false;  // trick checkRelay into executing fully and set the proper state
   
   // Set Blynk Virtual Heartbeat and LED_BUILTIN OFF
+  heartbeatLEDon = false;  
   digitalWrite ( LED_BUILTIN, LED_BUILTIN_LOW ); 
   Blynk.virtualWrite ( heartbeatVpin, 000 );  
   
-  heartbeatLEDon = false;  
   heartbeatLEDblink(); // start first heartbeat (uses timers, too)
   
   Serial.println ( "\nSetup complete \n*******************************\n" );    
@@ -420,110 +443,6 @@ void loop()
 
 
 
-// CHECK TO SEE IF THE RELAY STATE MATCHES THE CONTROL
-void checkRelay()
-{
-  Serial.print ( "\n    checkRelay called: " ); 
-    
-  #if REAL_SONOFF
-    if ( digitalRead ( SONOFF_RELAY_PIN ) == 1 )
-      relayON = true;
-    else
-      relayON = false;  
-  #else
-    relayON = controlButtonON;  // Match the button while developing without an actual SONOFF
-  #endif
-
-  Serial.print ( ", relayON = " ); Serial.print ( relayON );  
-  Serial.print ( ", controlButtonON = " ); Serial.println ( controlButtonON ); 
-
-  Serial.print ( "        Current systemState = " ); Serial.println ( systemState ); 
- 
-  if ( relayON )
-  {
-    switch ( systemState )
-    {
-      case BUTTON_OFF_RELAY_OFF:
-      {
-        systemState = SYSTEM_ERROR;  
-        break;
-      }
-
-      case BUTTON_ON_WAITING_FOR_RELAY:
-      {
-        systemState = BUTTON_ON_RELAY_ON;  
-        break;
-      }
-    
-      case BUTTON_ON_RELAY_ON:
-      {
-        systemState = BUTTON_ON_RELAY_ON;  
-        break;
-      }
-    
-      case BUTTON_OFF_WAITING_FOR_RELAY:
-      {
-        systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
-        break;
-      }
-    
-      case INITIALIZING:
-      {
-        systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
-        break;
-      }
-    }
-  }
-  else // relay is OFF
-  {
-    switch ( systemState )
-    {
-      case BUTTON_OFF_RELAY_OFF:
-      {
-        systemState = BUTTON_OFF_RELAY_OFF;  
-        break;
-      }
-    
-      case BUTTON_ON_WAITING_FOR_RELAY:
-      {
-        systemState = BUTTON_ON_WAITING_FOR_RELAY;  
-        break;
-      }
-    
-      case BUTTON_ON_RELAY_ON:
-      {
-        systemState = SYSTEM_ERROR;  
-        break;
-      }
-    
-      case BUTTON_OFF_WAITING_FOR_RELAY:
-      {
-        systemState = BUTTON_OFF_RELAY_OFF;  
-        break;
-      }
-    
-      case INITIALIZING:
-      {
-        systemState = BUTTON_OFF_RELAY_OFF;  
-        break;
-      }
-    }
-  }
-
-  Serial.print   ( "        New systemState = " ); Serial.println ( systemState ); 
-  
-  // Update the Blynk App widgets to the currentState
-  updateBlynkWidgets();
-
-  Serial.println ( "    exited checkRelay" );  
-
-    
-} // end checkRelay
-
-
-
-
-
 // BLYNK_WRITE_DEFAULT GETS CALLED WHEN THERE IS NO SPECIFIC BLYNK_WRITE FOR THAT VIRTUAL PIN
 // This makes it a flexible - and programmable - receiver
 // The Config Portal can provide FLEXIBLE Virtual Pin to power this
@@ -532,7 +451,7 @@ BLYNK_WRITE_DEFAULT()
   // THE VIRTUAL PIN THAT SENT THE MESSAGE TO BLYNK
   int writeVpin = request.pin; 
   
-  Serial.print ( "\nBLYNK_WRITE_DEFAULT RECEIVED  SIGNAL FROM V");
+  Serial.print ( "\nBLYNK_WRITE_DEFAULT received a signal from V");
   Serial.print ( writeVpin );
   Serial.println ( ": " );
 
@@ -555,21 +474,13 @@ BLYNK_WRITE_DEFAULT()
   Serial.print ( "     " ); 
   Serial.print ( "Current systemState = " ); Serial.println ( systemState ); 
 
-
-/*
-systemState    BUTTON_OFF_RELAY_OFF, BUTTON_ON_WAITING_FOR_RELAY, BUTTON_ON_RELAY_ON, BUTTON_OFF_WAITING_FOR_RELAY, INITIALIZING
-controlColor   BLYNK_GREEN,          BLYNK_RED,                   BLYNK_RED,          BLYNK_GREEN,                  BLYNK_GREEN,
-controlWrite   LOW,                  HIGH,                        HIGH,               LOW,                          LOW,       
-heartbeatColor BLYNK_GREEN,          BLYNK_GREEN,                 BLYNK_RED,          BLYNK_RED,                    BLYNK_GREY,
-statusDisplay  " is OFF",            " turning ON",               " is ON",           " turning OFF",               " initializing",
-*/
-    
+   
   // TAKE ACTION ON BUTTON PUSH
   if ( writeVpin == controlVpin ) // We have the ON/OFF input from Blynk
   {
     if ( ignoreQuickButtonPushes ) // Ignore button push and restore to previous state
     {
-      Serial.println ( "\nPUSHBUTTON IGNORED\n" );  
+      Serial.println ( "\n  >>PUSHBUTTON IGNORED<<\n" );  
       
       int controlButtonValue;
       if ( controlButtonON ) // restore to previous state
@@ -578,7 +489,7 @@ statusDisplay  " is OFF",            " turning ON",               " is ON",     
         controlButtonValue = 0;
       
       // Set the controlButton back to its earlier state
-      Blynk.virtualWrite ( controlVpin, controlButtonValue );        
+//      Blynk.virtualWrite ( controlVpin, controlButtonValue );        
     }
     else // Process good Control Button Push
     {
@@ -587,86 +498,104 @@ statusDisplay  " is OFF",            " turning ON",               " is ON",     
       Serial.print ( "     " ); 
       Serial.print ( "Control Button Hit with value = " ); Serial.println ( controlButtonValue );  
 
+      if ( systemState < 1 || systemState > 5 ) 
+      { Serial.println ( "SYSTEMSTATE ERROR in updateBlynkWidgets " ); Serial.println ( systemState); }
+
+
       if ( controlButtonValue == 1 )
         controlButtonON = true;
       else
         controlButtonON = false;  
 
-
-
-      if ( controlButtonON )
-      switch ( systemState )
+      // We have a good Control Button Push, so we will now change state
+      // Protect theis State Machine while it's running from timer-initiated routines also working the State machine
+      if ( ! protectSystemState )
       {
-        case BUTTON_OFF_RELAY_OFF:
-        {
-          systemState = BUTTON_ON_WAITING_FOR_RELAY;  
-          turnSONOFFon();
-          break;
-        }
       
-        case BUTTON_ON_WAITING_FOR_RELAY:
+        // We just got a good Control Button Push, and now will change state in teh State Machine
+        // Prevent other instances of ther State Machine from changing state now
+        protectSystemState = true;  
+        
+        if ( controlButtonON )
+        switch ( systemState )
         {
-          systemState = BUTTON_ON_WAITING_FOR_RELAY;  
-          break;
-        }
+          case BUTTON_OFF_RELAY_OFF:
+          {
+            systemState = BUTTON_ON_WAITING_FOR_RELAY;  
+            turnSONOFFon();
+            break;
+          }
       
-        case BUTTON_ON_RELAY_ON:
-        {
-          systemState = BUTTON_ON_RELAY_ON;  
-          break;
-        }
+          case BUTTON_ON_WAITING_FOR_RELAY:
+          {
+            systemState = BUTTON_ON_WAITING_FOR_RELAY;  
+            break;
+          }
       
-        case BUTTON_OFF_WAITING_FOR_RELAY:
-        {
-          systemState = BUTTON_ON_WAITING_FOR_RELAY;  
-          turnSONOFFon();
-          break;
-        }
+          case BUTTON_ON_RELAY_ON:
+          {
+            systemState = BUTTON_ON_RELAY_ON;  
+            break;
+          }
       
-        case INITIALIZING: 
-        {
-          systemState = BUTTON_ON_WAITING_FOR_RELAY;  
-          turnSONOFFon();
-          break;
-        }
-      }
-      else // button is OFF
-      switch ( systemState )
-      {
-        case BUTTON_OFF_RELAY_OFF:
-        {
-          systemState = BUTTON_OFF_RELAY_OFF;  
-          break;
-        }
+          case BUTTON_OFF_WAITING_FOR_RELAY:
+          {
+            systemState = BUTTON_ON_WAITING_FOR_RELAY;  
+            turnSONOFFon();
+            break;
+          }
       
-        case BUTTON_ON_WAITING_FOR_RELAY:
+          case INITIALIZING: 
+          {
+            systemState = BUTTON_ON_WAITING_FOR_RELAY;  
+            turnSONOFFon();
+            break;
+          }
+        } // end Control Button ON switch/case stmt
+        
+        else // Control Button is OFF
+        switch ( systemState )
         {
-          systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
-          turnSONOFFoff();
-          break;
-        }
+          case BUTTON_OFF_RELAY_OFF:
+          {
+            systemState = BUTTON_OFF_RELAY_OFF;  
+            break;
+          }
       
-        case BUTTON_ON_RELAY_ON:
-        {
-          systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
-          turnSONOFFoff();
-          break;
-        }
+          case BUTTON_ON_WAITING_FOR_RELAY:
+          {
+            systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
+            turnSONOFFoff();
+            break;
+          }
       
-        case BUTTON_OFF_WAITING_FOR_RELAY:
-        {
-          systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
-          break;
-        }
+          case BUTTON_ON_RELAY_ON:
+          {
+            systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
+            turnSONOFFoff();
+            break;
+          }
+      
+          case BUTTON_OFF_WAITING_FOR_RELAY:
+          {
+            systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
+            break;
+          }
      
-        case INITIALIZING:
-        {
-          systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
-          turnSONOFFoff();
-          break;
-        }
-      } // end case stmt on OFF button push
-      
+          case INITIALIZING:
+          {
+            systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
+            turnSONOFFoff();
+            break;
+          }
+
+        } // end case stmt on good button push
+        
+        // We are done working the FSM now, so can open it up for other instances
+        protectSystemState = false; 
+          
+      } // end protection for FSM changes on GOOD button push
+          
       // We just got a good Control Button Push so...
       // Set a timer to IGNORE buttonpushes for a short while
       ignoreQuickButtonPushes = true;  
@@ -677,7 +606,7 @@ statusDisplay  " is OFF",            " turning ON",               " is ON",     
     
     } // end processing a good ON or OFF Control Button Push
 
-  } // end of processing a Control Button Push
+  } // end of processing any (good or bad) Control Button Push
 
   else if ( writeVpin == resetVpin ) // We have an hit on the 'invisible' reset button
   {
@@ -701,6 +630,131 @@ statusDisplay  " is OFF",            " turning ON",               " is ON",     
   Serial.println ( "exited BLYNK_WRITE_DEFAULT" );  
 
 } //end BLYNK_WRITE_DEFAULT
+
+
+
+
+
+// CHECK TO SEE IF THE RELAY STATE MATCHES THE CONTROL
+// Runs on timers aand from heartbeat
+void checkRelay()
+{
+  Serial.print ( "\n    checkRelay called: " ); 
+
+  bool newRelayON;    
+  #if REAL_SONOFF
+    if ( digitalRead ( SONOFF_RELAY_PIN ) == 1 )
+      newRelayON = true;
+    else
+      newRelayON = false;  
+  #else
+    newRelayON = controlButtonON;  // Match the button while developing without an actual SONOFF
+  #endif
+
+  Serial.print ( ", relayON = " ); Serial.print ( relayON );  
+  Serial.print ( ", controlButtonON = " ); Serial.println ( controlButtonON ); 
+
+  Serial.print ( "        Current systemState = " ); Serial.println ( systemState ); 
+
+  if ( systemState < 1 || systemState > 5 ) 
+  { Serial.println ( "SYSTEMSTATE ERROR in updateBlynkWidgets " ); Serial.println ( systemState); }
+
+  if ( newRelayON == relayON )
+  { 
+    Serial.print   ( "        No change in relay status. systemState = " ); Serial.println ( systemState ); 
+  }
+  else  // relay has changed state - now change systemState if needed
+  {
+    relayON = newRelayON;  
+
+    // Relay state has changed, so we will change systemState
+    // Prevent this from overwriting another change to the systemState elsewhere
+    if ( ! protectSystemState )
+    {
+      // Don't let anyone else mess with teh FSM during this process
+      protectSystemState = true;  
+      if ( relayON )
+      switch ( systemState )
+      {
+        case BUTTON_OFF_RELAY_OFF:
+        {
+          systemState = SYSTEM_ERROR;  
+          break;
+        }
+
+        case BUTTON_ON_WAITING_FOR_RELAY:
+        {
+          systemState = BUTTON_ON_RELAY_ON;  
+          break;
+        }
+    
+        case BUTTON_ON_RELAY_ON:
+        {
+          systemState = BUTTON_ON_RELAY_ON;  
+          break;
+        }
+    
+        case BUTTON_OFF_WAITING_FOR_RELAY:
+        {
+          systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
+          break;
+        }
+    
+        case INITIALIZING:
+        {
+          systemState = BUTTON_OFF_WAITING_FOR_RELAY;  
+          turnSONOFFoff();  
+          break;
+        }
+      } // end relay = ON switch/case
+      
+      else // relay is OFF
+      switch ( systemState )
+      {
+        case BUTTON_OFF_RELAY_OFF:
+        {
+          systemState = BUTTON_OFF_RELAY_OFF;  
+          break;
+        }
+    
+        case BUTTON_ON_WAITING_FOR_RELAY:
+        {
+          systemState = BUTTON_ON_WAITING_FOR_RELAY;  
+          break;
+        }
+  
+        case BUTTON_ON_RELAY_ON:
+        {
+          systemState = SYSTEM_ERROR;  
+          break;
+        }
+    
+        case BUTTON_OFF_WAITING_FOR_RELAY:
+        {
+          systemState = BUTTON_OFF_RELAY_OFF;  
+          break;
+        }
+    
+        case INITIALIZING:
+        {
+          systemState = BUTTON_OFF_RELAY_OFF;  
+          break;
+        }
+      } // end relay is OFF switch/case statement
+
+      // We ran in a protectedSystemState = true mode while FSM was running
+      protectSystemState = false;  
+      
+    } // end if protectSystemsState
+  
+    Serial.print   ( "        New systemState = " ); Serial.println ( systemState ); 
+  }
+  
+  // Update the Blynk App widgets to the currentState every time checkRelay runs
+  updateBlynkWidgets();
+
+  Serial.println ( "    exited checkRelay" );  
+} // end checkRelay
 
 
 
@@ -785,19 +839,20 @@ void initializeBlynkWidgets()
 
 
 
-
 // Set up the operating colors and labels 
 void updateBlynkWidgets()
 {
 
-  String controlButtonColor; 
-  String heartbeatColor;
-  int controlButtonWrite;  
+  String controlButtonColor = BLYNK_WHITE;; 
+  String heartbeatColor = BLYNK_WHITE;
+  int controlButtonWrite = -1;  
   String statusDisplay = "";  
-  
+
   Serial.print ( "            " );  
   Serial.print ( "updateBlynkWidgets called with systemState " ); 
   Serial.println ( systemState );  
+  if ( systemState < 1 || systemState > 5 ) 
+  { Serial.println ( "SYSTEMSTATE ERROR in updateBlynkWidgets " ); Serial.println ( systemState); }
 
 /*
 systemState    BUTTON_OFF_RELAY_OFF, BUTTON_ON_WAITING_FOR_RELAY, BUTTON_ON_RELAY_ON, BUTTON_OFF_WAITING_FOR_RELAY, INITIALIZING
@@ -807,84 +862,98 @@ heartbeatColor BLYNK_GREEN,          BLYNK_GREEN,                 BLYNK_RED,    
 statusDisplay  " is OFF",            " turning ON",               " is ON",           " turning OFF",               " initializing",
 */
 
+  // Do not let Button-triggered or timer-triggered changes to systemState screw up this routine
+  if ( protectSystemState )
+  {
+    Serial.println ( "  >> updateBlynkWidgets called while protectedSystemState = true" );    
+  }
   
-  switch ( systemState )
-  {
-    case BUTTON_OFF_RELAY_OFF:
-      controlButtonColor = BLYNK_GREEN;    
-      heartbeatColor = BLYNK_GREEN;  
-      controlButtonWrite = 0;  
-      statusDisplay = " is OFF";  
-      break;
+  else // OK to execute on the BlynkAPp updates
+  { 
+    protectSystemState = true;  
 
-    case BUTTON_ON_WAITING_FOR_RELAY:
-      controlButtonColor = BLYNK_RED;    
-      heartbeatColor = BLYNK_GREEN;  
-      controlButtonWrite = 1;  
-      statusDisplay = " turning ON";  
-      break;
+    switch ( systemState )
+    {
+      case BUTTON_OFF_RELAY_OFF:
+        controlButtonColor = BLYNK_GREEN;    
+        heartbeatColor = BLYNK_GREEN;  
+        controlButtonWrite = 0;  
+        statusDisplay = " is OFF";  
+        break;
 
-    case BUTTON_ON_RELAY_ON:
-      controlButtonColor = BLYNK_RED;    
-      heartbeatColor = BLYNK_RED;  
-      controlButtonWrite = 1;  
-      statusDisplay = " is ON";  
-      break;
+      case BUTTON_ON_WAITING_FOR_RELAY:
+        controlButtonColor = BLYNK_RED;    
+        heartbeatColor = BLYNK_GREEN;  
+        controlButtonWrite = 1;  
+        statusDisplay = " turning ON";  
+        break;
 
-    case BUTTON_OFF_WAITING_FOR_RELAY:
-      controlButtonColor = BLYNK_GREEN;    
-      heartbeatColor = BLYNK_RED;  
-      controlButtonWrite = 0;  
-      statusDisplay = " turning OFF";  
-      break;
+      case BUTTON_ON_RELAY_ON:
+        controlButtonColor = BLYNK_RED;    
+        heartbeatColor = BLYNK_RED;  
+        controlButtonWrite = 1;  
+        statusDisplay = " is ON";  
+        break;
 
-    case INITIALIZING:
-      controlButtonColor = BLYNK_GREEN;   
-      heartbeatColor = BLYNK_GREY;  
-      controlButtonWrite = 0;  
-      statusDisplay = " Initializing";  
-      break;
+      case BUTTON_OFF_WAITING_FOR_RELAY:
+        controlButtonColor = BLYNK_GREEN;    
+        heartbeatColor = BLYNK_RED;  
+        controlButtonWrite = 0;  
+        statusDisplay = " turning OFF";  
+        break;
 
-    case SYSTEM_ERROR: // REBOOTS on Error
-      Serial.println ( "\nSYSTEM ERROR" ); 
-      Serial.println (   "SYSTEM ERROR" ); 
-      Serial.println (   "SYSTEM ERROR" ); 
-      Serial.println (   "SYSTEM ERROR\n" ); 
+      case INITIALIZING:
+        controlButtonColor = BLYNK_GREEN;   
+        heartbeatColor = BLYNK_GREY;  
+        controlButtonWrite = 0;  
+        statusDisplay = " Initializing";  
+        break;
+
+      case SYSTEM_ERROR: // REBOOTS on Error
+        Serial.println ( "\nSYSTEM ERROR" ); 
+        Serial.println (   "SYSTEM ERROR" ); 
+        Serial.println (   "SYSTEM ERROR" ); 
+        Serial.println (   "SYSTEM ERROR\n" ); 
       
-      controlButtonColor = BLYNK_YELLOW;    
-      heartbeatColor = BLYNK_YELLOW;  
-      statusDisplay = " Error.  Restarting"; 
-      break;
+        controlButtonColor = BLYNK_YELLOW;    
+        heartbeatColor = BLYNK_YELLOW;  
+        controlButtonWrite = 0;  
+        statusDisplay = " Error.  Restarting"; 
+        break;
 
-    default:
-      Serial.println ( "\nDEFAULT CASE CALLED in updateBlynkWidgets" ); 
-      controlButtonColor = BLYNK_YELLOW;    
-      heartbeatColor = BLYNK_YELLOW;  
-      statusDisplay = "I am so confused";  
-      break;
-  }
+      default:
+        Serial.println ( "\nDEFAULT CASE CALLED in updateBlynkWidgets" ); 
+        controlButtonColor = BLYNK_YELLOW;    
+        heartbeatColor = BLYNK_YELLOW;  
+        controlButtonWrite = 0;  
+        statusDisplay = "I am so confused";  
+        break;
+    }
 
-  Blynk.setProperty  ( controlVpin, "color", controlButtonColor );    
-  Blynk.virtualWrite ( controlVpin, controlButtonWrite );  
+    Blynk.setProperty  ( controlVpin, "color", controlButtonColor );    
+    Blynk.virtualWrite ( controlVpin, controlButtonWrite );  
 
-  Blynk.setProperty ( heartbeatVpin, "color", heartbeatColor );  
-  statusDisplay = String ( displayLabel ) + statusDisplay;  
-  Blynk.virtualWrite ( displayVpin, statusDisplay );  
+    Blynk.setProperty ( heartbeatVpin, "color", heartbeatColor );  
+    statusDisplay = String ( displayLabel ) + statusDisplay;  
+    Blynk.virtualWrite ( displayVpin, statusDisplay );  
 
 
-  ////////////////////////////////////////////////////////////////////////
-  // RESTART SYSTEM ON systemState ERROR
-  ////////////////////////////////////////////////////////////////////////
-  if ( systemState == SYSTEM_ERROR )
-  {
-    Serial.println ( "Resetting in a few seconds...\n\n\n\n\n" );
-    delay ( 3000 );  
-    ESP.restart();
-  }
+    ////////////////////////////////////////////////////////////////////////
+    // RESTART SYSTEM ON systemState ERROR
+    ////////////////////////////////////////////////////////////////////////
+    if ( systemState == SYSTEM_ERROR )
+    {
+      Serial.println ( "SYSTEM ERROR from updateBlynkWidgets.\nResetting in a few seconds...\n\n\n\n\n" );
+      delay ( 3000 );  
+      ESP.restart();
+    }
 
-  Serial.print ( "            " );  
-  Serial.println( "exited updateBlynkWidgets" );  
+    Serial.print ( "            " );  
+    Serial.println( "exited updateBlynkWidgets" );  
 
+    protectSystemState = false;  
+  } // end of protectedSystemState = false
+  
 } // end updateBlynkWidgets
 
 
@@ -946,7 +1015,7 @@ void updateDynamicParameters()
   Serial.print ( "Set resetVpin to " ) ; Serial.println ( resetVpin );
 
   Serial.println ( "exited updateDynamicParameters\n" );  
-
+  
 } // end updateDynamicParameters
 
 
@@ -1026,53 +1095,25 @@ void endFlushAtStartup()
 void connectToWLANandBlynk()
 {
   // Setup WLAN and Blynk
-  Serial.print ( "\nSetting up WLAN and Blynk " );  
-  #if USE_WM
-    Serial.println ( "with WiFiManager" ); 
-  #else
-    Serial.println ( "WITHOUT WiFiManager" );  
-  #endif
-  
-  #if USE_WM
-    Serial.println ( "Starting Blynk.begin (with WM)" );  
+  Serial.print ( "\nSetting up WLAN and Blynk with WiFiManager" );  
+  Serial.println ( "Starting Blynk.begin" );  
 
-    // SET UP THE CONFIG PORTAL CREDENTIALS AND CONNECTION INFO
-    Blynk.setConfigPortalChannel ( 0 );  // 0 -> Use a random WiFi 2.4GHz channel for the Config Portal
-    Blynk.setConfigPortal ( CONFIG_PORTAL_SSID, CONFIG_PORTAL_PASSWORD ); // Set up Config Portal SSID & Password
-    Blynk.setConfigPortalIP ( IPAddress ( CONFIG_PORTAL_IPADDRESS ) ); // Set up IP address for COnfig Portal once connected to WiFi
+  // SET UP THE CONFIG PORTAL CREDENTIALS AND CONNECTION INFO
+  Blynk.setConfigPortalChannel ( 0 );  // 0 -> Use a random WiFi 2.4GHz channel for the Config Portal
+  Blynk.setConfigPortal ( CONFIG_PORTAL_SSID, CONFIG_PORTAL_PASSWORD ); // Set up Config Portal SSID & Password
+  Blynk.setConfigPortalIP ( IPAddress ( CONFIG_PORTAL_IPADDRESS ) ); // Set up IP address for Config Portal once connected to WiFi
 
-    Serial.print ( "     " ); 
-    Serial.print ( "Blynk.setConfigPortal(" ); 
-    Serial.print ( CONFIG_PORTAL_SSID ); Serial.print ( "," );  
-    Serial.print ( CONFIG_PORTAL_PASSWORD ); Serial.println ( ")" );   
+  Serial.print ( "     " ); 
+  Serial.print ( "Blynk.setConfigPortal(" ); 
+  Serial.print ( CONFIG_PORTAL_SSID ); Serial.print ( "," );  
+  Serial.print ( CONFIG_PORTAL_PASSWORD ); Serial.println ( ")" );   
 
-    Serial.print ( "     " ); 
-    Serial.print ( "Config Portal will be found at IP: " ); Serial.print ( IPAddress ( CONFIG_PORTAL_IPADDRESS ) );  
-    Serial.println ( "\n" );  
+  Serial.print ( "     " ); 
+  Serial.print ( "Config Portal will be found at IP: " ); Serial.print ( IPAddress ( CONFIG_PORTAL_IPADDRESS ) );  
+  Serial.println ( "\n" );  
     
-    //Blynk.config ( blynkAuth );  // not needed with WM 
-    Blynk.begin ( DEVICE_HOST_NAME ); // DHCP (router) device name
-  
-  #else//NOT using WM
-    Serial.println ( "Starting WiFi.begin (no WM)" );  
-    WiFi.begin ( WiFiSSID, WiFiPass );
-    Serial.println ( "... waiting a few seconds for WiFi ..." );    
-    #if ESP8266
-      delay ( 7500 );  // For esp8266, it needs a delay to realize it has connected
-    #endif
-      
-    // REBOOT if we do not have a good WiFi connection
-    if ( WiFi.status() != WL_CONNECTED )
-    {
-      Serial.println ( "Resetting in a few seconds...\n\n\n\n\n" );
-      delay ( 3000 );  
-      ESP.restart();
-    } 
-    
-    // Configure and launch Blynk
-    Blynk.config ( blynkAuth );
-    Blynk.connect ( 2500 ); // Don't get stuck hanging for more than 2500 millis.
-  #endif // using WM
+  //Blynk.config ( blynkAuth );  // not needed with WM 
+  Blynk.begin ( DEVICE_HOST_NAME ); // DHCP (router) device name
   
   if ( Blynk.connected() ) 
   {
