@@ -35,10 +35,50 @@ This sketch uses Blynk's BLYNK_WRITE_DEFAULT() capability to deliver this flexib
 The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 12345678 and IP address of 192.168.220.1. 
 These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch (but could be made selectable in the Config Portal, itself.)
  
-I hope this is as useful to you as it has been to me to understand Blynk, the BlynkSimpleESP... and ...WiFiManager libraries, the ESP32 and ESP8266.  https://github.com/thorathome/Blynk_Examples
+I hope this is as useful to you as it has been to me to understand Blynk, the BlynkSimpleESP... and ...WiFiManager libraries, the ESP32 and ESP8266.  
  
  **Thanks to @khoih-prog (@khoih on Blynk Community) for updating this example to include LittleFS and for writing the powerful WiFiManager library**
+See https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
 
+
+
+## SONOFF_301.ino
+This is a fully-developed SONOFF control system using the powerful BlynkSimpleEsp8266_SSL_WM  WiFiManager (WM) libraries  for ESP8266. 
+See https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
+
+It demonstrates
+* WiFiManager Config Portal configuration and use
+* WiFiManager Dynamic (extended) Parameters configuration and use
+* Use of compiler constants for compile-time selection
+* Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
+
+This sketch creates a simple Blynk on/off switch, an indicator Blynk LED and a display panel to tell me what this is controlling.
+It lets me choose at runtime (without recompile or download to SONOFF - kind of a pain) the
+* SONOFF device name
+* Blynk Virtual Pins I will use for this particular device
+ 
+It requires:
+* Blynk Button in SWITCH mode
+* Blynk LED
+* Blynk Value Display
+* (optional) Blynk Button to force the WiFi Manager Config Portal to reset
+             The DRD (Double Reset Detector) can do the same thing.
+* Blynk master library installed
+* Blynk_WiFiManager installed
+* SONOFF Basic (ESP8266) device and the ability to flash it. (See elsewhere.)  
+
+As in all Blynk sketches using WiFi, you will need
+* Your WiFi SSID or SSIDs and passwords
+* Your Blynk authcode or authcodes
+* Your Blynk server URL (Main US Blynk server is blynk-cloud.com.)
+
+These values do not need to be coded into the sketch as they may be entered at runtime (once) into the Config Portal.
+
+You also do not have to hardcode the Virtual Pins for the Blynk Button, LED or Value Display, can input them at runtime using the Config Portal. 
+ 
+This sketch uses Blynk's BLYNK_WRITE_DEFAULT() capability to deliver this flexibility. I use this approach to manage a number of similar wireless controls like SONOFFs.
+The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 12345678 and IP address of 192.168.220.1 
+These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch using #included files (but could be made selectable in the Config Portal, itself.)
 
 
 ## MY_WIFI_CREDENTIALS.h
