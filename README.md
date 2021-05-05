@@ -4,11 +4,11 @@ The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-
 
 This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE features.
 * Basic Blynk_WiFiManager Config Portal configuration and use
-* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager.)
+* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager.)_
 * Use of multiple SONOFF devices on one Blynk Authcode
 * Use of compiler constants for compile-time device selection
 * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
-* Use of EEPROM to remember the device labels in flash memory. (LittleFS was too large for SONOFF's relatively small memory.)
+* Use of EEPROM to remember the device labels in flash memory. _(LittleFS was too large for SONOFF's relatively small memory.)_
 
 For each SONOFF device, the Blynk App wants to see...
 * Blynk Button in SWITCH mode (ON/OFF)
@@ -18,8 +18,15 @@ For each SONOFF device, the Blynk App wants to see...
 
 Arduino IDE requires 
 * Arduino ESPcore installed (for the ESP8266-based SONOFFs)
-* Blynk master library 0.6.x (not the 1.0.0-beta version) installed
+* **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
+* Several #include files placed in a folder in your library directory, downloadable here
+* * MY_WIFI_CREDENTIALS.h - WiFi SSIDs and Passwords
+* * MY_BLYNK_CREDENTIALS.h - Blynk Authcodes 
+* * MY_ESP_LED_BUILTINS.h - helpers for inverted ESP8266 LED logic
+* * MY_bLYNK_COLORS.h - bunch of Blynk colors in hex
+* * MY_SERIAL_PRINTS.h - helpers for Serial.print
+* * OTABlynkTelNet.h OR OTABlynk.h - Spiess' OTA and OTA/TelNetStream code
 
 You will also need, of course
 * One or more SONOFF Basic (ESP8266) devices and the ability to flash the SONOFFs. (See elsewhere for How Tos.)
