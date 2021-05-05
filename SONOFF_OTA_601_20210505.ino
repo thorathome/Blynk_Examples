@@ -106,7 +106,7 @@ https://youtu.be/1pwqS_NUG7Q
 
 #include "MY_WIFI_CREDENTIALS.h"   // #defines MY_WIFI_SSID/2 AND MY_WIFI_PASSWORD/2
 #include "MY_BLYNK_CREDENTIALS.h"  // #defines MY_BLYNK_SERVER and MY_xxx_AUTHCODE
-#include "ESP_LED_BUILTINS.h"      // #defines LED_BUILTIN_HIGH and _LOW for uniform use across devices
+#include "MY_ESP_LED_BUILTINS.h"   // #defines LED_BUILTIN_HIGH and _LOW for uniform use across devices
 #include "MY_BLYNK_COLORS.h"       // #defines a bunch of handy Blynk colors
 
 
