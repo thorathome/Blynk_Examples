@@ -4,7 +4,7 @@ The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-
 
 This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE features.
 * Basic Blynk_WiFiManager Config Portal configuration and use
-* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - done my Blynk_WiFiManager.)
+* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager.)
 * Use of multiple SONOFF devices on one Blynk Authcode
 * Use of compiler constants for compile-time device selection
 * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
