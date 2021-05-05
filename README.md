@@ -4,12 +4,14 @@ See https://github.com/thorathome/Blynk_Examples
    
 See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
 
-This is probably not the first Arduino sketch you should try. It uses some advanced features and requires flashing a SONOFF. (For SONOFF development, I recommend starting with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with working code.)
+This is probably not the first Arduino sketch you should try. It uses some advanced features and requires flashing a SONOFF. 
+
+For SONOFF development, I recommend starting with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with working code. Here's a link to a helpful tutorial on SONOFF flashing. There are others, too.
+https://medium.com/@jeffreyroshan/flashing-a-custom-firmware-to-sonoff-wifi-switch-with-arduino-ide-402e5a2f77b 
    
 This sketch demonstrates some advanced Blynk and Arduino features.
 * Basic WiFiManager Config Portal configuration and use
-* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332
-* (I modified his code a bit to assume WiFi connection is already in place - done my Blynk_WiFiManager.)
+* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - done my Blynk_WiFiManager.)
 * Use of EEPROM to remember the device labels in the app. (LittleFS was too large for SONOFF memory.)
 * Use of compiler constants for compile-time selection
 * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
