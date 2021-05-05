@@ -1,6 +1,6 @@
 /*
 
-   The Arduino/Blynk sketch SONOFF BLYNK OTA.ino is a fully-developed SONOFF control system using
+   The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino.ino is a fully-developed SONOFF control system using
    the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266.
    
    See https://github.com/thorathome/Blynk_Examples
