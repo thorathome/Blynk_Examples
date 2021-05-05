@@ -2,10 +2,11 @@
 #define SERIAL_SPEED 230400
 
 #ifndef ESP8266
-#error Hey this is for SONOFF and ESP8266 ONLY!
+  #error Hey this is for SONOFF and ESP8266 ONLY!
 #endif
 
-/*
+/* README
+
 The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-enabled, multi-device SONOFF control system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
 **If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try.** It uses some advanced features and requires flashing a SONOFF. 
@@ -63,6 +64,7 @@ See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager libra
 
 See Andreas Spiess on YouTube for his OTA episodes. This one refers to ESP32, but is also applicable to ESP8266/SONOFF.
 https://youtu.be/1pwqS_NUG7Q
+
 */
 
 
@@ -89,9 +91,9 @@ https://youtu.be/1pwqS_NUG7Q
 /// Must have this BEFORE the #includes
 #define USE_LITTLEFS      false    // true = LittleFS  false = EEPROM
 
-/* // UNUSED We use a EEPROM file to maintain the device label seen on the widgets
+#if USE_LITTLEFS
   #define DISPLAY_LABEL_FILE_NAME  "/SONOFF_DISPLAY.txt"
-*/
+#endif
 
 
 
@@ -123,16 +125,17 @@ https://youtu.be/1pwqS_NUG7Q
 #define NATASHA     false   // 601 <===== updated 21 Apr 21 to new quasi-SSL WiFiManager 1.3.0
 #define SONOFF_DEV  true   // 601
 
-// Look for more than one, or none selected
-#if ( LARRY      && (          CURLY || MOE || ROCKY || BORIS || NATASHA || SONOFF_DEV ) ) // only Larry
- || ( CURLY      && ( LARRY ||          MOE || ROCKY || BORIS || NATASHA || SONOFF_DEV ) ) // only Curly
- || ( MOE        && ( LARRY || CURLY ||        ROCKY || BORIS || NATASHA || SONOFF_DEV ) ) // only Moe
- || ( ROCKY      && ( LARRY || CURLY || MOE ||          BORIS || NATASHA || SONOFF_DEV ) ) // only Rocky
- || ( BORIS      && ( LARRY || CURLY || MOE || ROCKY ||          NATASHA || SONOFF_DEV ) ) // only Boris
- || ( NATASHA    && ( LARRY || CURLY || MOE || ROCKY || BORIS            || SONOFF_DEV ) ) // only Natasha
- || ( SONOFF_DEV && ( LARRY || CURLY || MOE || ROCKY || BORIS || NATASHA               ) ) // only SONOFF_DEV
+// Look for more than one SONOFF, or none selected
+#if   ( LARRY      && (          CURLY || MOE || ROCKY || BORIS || NATASHA || SONOFF_DEV ) ) // not only Larry, or
+ ||   ( CURLY      && ( LARRY ||          MOE || ROCKY || BORIS || NATASHA || SONOFF_DEV ) ) // not only Curly, or
+ ||   ( MOE        && ( LARRY || CURLY ||        ROCKY || BORIS || NATASHA || SONOFF_DEV ) ) // not only Moe, or
+ ||   ( ROCKY      && ( LARRY || CURLY || MOE ||          BORIS || NATASHA || SONOFF_DEV ) ) // not only Rocky, or
+ ||   ( BORIS      && ( LARRY || CURLY || MOE || ROCKY ||          NATASHA || SONOFF_DEV ) ) // not only Boris, or
+ ||   ( NATASHA    && ( LARRY || CURLY || MOE || ROCKY || BORIS            || SONOFF_DEV ) ) // not only Natasha, or
+ ||   ( SONOFF_DEV && ( LARRY || CURLY || MOE || ROCKY || BORIS || NATASHA               ) ) // not only SONOFF_DEV, or
+ ||                 ! ( LARRY || CURLY || MOE || ROCKY || BORIS || NATASHA || SONOFF_DEV )   // none at all
 
-#error "ERROR1 Selecting Target SONOFF Platform"
+  #error "ERROR1 Selecting Target SONOFF Platform"
 #endif
 
 
@@ -229,6 +232,7 @@ https://youtu.be/1pwqS_NUG7Q
 
 #if SONOFF_DEV
   #define SONOFF_RELAY_PIN     5               // ESP8266 RELAY ON/OFF
+                                               // LED_BUILTIN for ESP8266 defined by MY_ESP_LED_BUILTINS.h
 #else
   #define SONOFF_RELAY_PIN     12              // SONOFF RELAY ON/OFF
   #define LED_BUILTIN          13              // SONOFF ONBOARD LED
