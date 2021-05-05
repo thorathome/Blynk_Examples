@@ -13,11 +13,13 @@ This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE 
 For each SONOFF device, the Blynk App wants to see...
 * Blynk Button in SWITCH mode (ON/OFF)
 * Blynk LED (Heartbeat)
+* Blynk Value Display Widget (for the Switch Label)
 * Blynk Text Input Widget (to set and display the Switch label... AND to force a Reboot)
 * (Virtual Pins are hardcoded into the sketch, device by device, using #compiler directives.)
+* **THEREFORE, for 6 SONOFF devices, you'll want 6 of each Widget.** _(I only have 1 Text Input Widget for all 6 SONOFFs, and I change the Vpin from the Blynk App when labelling or Rebooting the Switches.)_
 
 Arduino IDE requires 
-* Arduino ESPcore installed (for the ESP8266-based SONOFFs)
+* Arduino ESP core installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
 * Several #include files placed in a folder in your library directory, downloaded for edit and use from this repository
