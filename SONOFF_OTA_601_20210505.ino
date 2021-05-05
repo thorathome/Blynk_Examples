@@ -12,7 +12,7 @@ The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-
 
 This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE features.
 * Basic Blynk_WiFiManager Config Portal configuration and use
-* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager.)_
+* Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager. Modified code available in this repository. Thank you, Andreas Spiess.)_
 * Use of multiple SONOFF devices on one Blynk Authcode
 * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
 * Use of compiler constants for compile-time device selection
@@ -21,16 +21,19 @@ This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE 
 For each SONOFF device, the Blynk App wants to see...
 * Blynk Button in SWITCH mode (ON/OFF)
 * Blynk LED (Heartbeat)
+* Blynk Value Display Widget (for the Switch Label)
 * Blynk Text Input Widget (to set and display the Switch label... AND to force a Reboot)
 * (Virtual Pins are hardcoded into the sketch, device by device, using #compiler directives.)
+* **THEREFORE, for 6 SONOFF devices, you'll want 6 of each Widget.** _(I only have 1 Text Input Widget for all 6 SONOFFs, and I change the Vpin from the Blynk App when labelling or Rebooting the Switches.)_
 
 Arduino IDE requires 
-* Arduino ESPcore installed (for the ESP8266-based SONOFFs)
+* Arduino ESP core installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
-* Several #include files placed in a folder in your library directory, downloaded for edit and use in this repository
+* Several #include files placed in a folder in your library directory, downloaded for edit and use from this repository
 * * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
 * * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
+* * MY_BLYNK_WIFIMANAGER_SETUP_SSL.h - edit in you own preferences for standard Blynk_WiFiManager setup
 * * MY_ESP_LED_BUILTINS.h - helpers for inverted ESP8266 LED logic
 * * MY_BLYNK_COLORS.h - bunch of Blynk colors in hex
 * * MY_SERIAL_PRINTS.h - helpers for Serial.print
@@ -60,7 +63,6 @@ See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager libra
 
 See Andreas Spiess on YouTube for his OTA episodes. This one refers to ESP32, but is also applicable to ESP8266/SONOFF.
 https://youtu.be/1pwqS_NUG7Q
-
 */
 
 
