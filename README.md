@@ -4,7 +4,7 @@ See https://github.com/thorathome/Blynk_Examples
    
 See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
 
-This is probably not the first Arduino sketch you should try. It uses some advanced features and requires flasing a SONOFF. (For SONOFF development, I recommend starting with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with working code.)
+This is probably not the first Arduino sketch you should try. It uses some advanced features and requires flashing a SONOFF. (For SONOFF development, I recommend starting with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with working code.)
    
 This sketch demonstrates some advanced Blynk and Arduino features.
 * Basic WiFiManager Config Portal configuration and use
