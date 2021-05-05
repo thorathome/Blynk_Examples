@@ -1,18 +1,14 @@
-The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino.ino is a fully-developed OTA-enabled, SONOFF control system using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266.
+The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino.ino is a fully-developed OTA-enabled, SONOFF control system using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
-See https://github.com/thorathome/Blynk_Examples
-   
-See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
+If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try. It uses some advanced features and requires flashing a SONOFF. 
 
-This is probably not the first Arduino sketch you should try. It uses some advanced features and requires flashing a SONOFF. 
-
-For SONOFF development, I recommend starting with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with working code. Here's a link to a helpful tutorial on SONOFF flashing. There are others, too.
+_For SONOFF development, I recommend working initially with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with working code. Here's a link to a helpful tutorial on SONOFF flashing. There are others, too._
 https://medium.com/@jeffreyroshan/flashing-a-custom-firmware-to-sonoff-wifi-switch-with-arduino-ide-402e5a2f77b 
    
 This sketch demonstrates some advanced Blynk and Arduino features.
 * Basic WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - done my Blynk_WiFiManager.)
-* Use of EEPROM to remember the device labels in the app. (LittleFS was too large for SONOFF memory.)
+* Use of EEPROM to remember the device labels in the app. (LittleFS was too large for SONOFF's relatively small memory.)
 * Use of compiler constants for compile-time selection
 * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
 * Use of multiple devices on one Blynk Authcode
@@ -43,3 +39,8 @@ The Config Portal will appear as SSID MyConfigPortal, with WiFi password of 1234
 and IP address of 192.168.220.1
 These three values (Config Portal SSID, password, IP address) are hardcoded into the sketch
 using #include files (but could be made selectable in the Config Portal, itself.)
+
+See https://github.com/thorathome/Blynk_Examples
+   
+See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
+
