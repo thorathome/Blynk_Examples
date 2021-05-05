@@ -20,13 +20,13 @@ Arduino IDE requires
 * Arduino ESPcore installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
-* Several #include files placed in a folder in your library directory, downloadable here
-* * MY_WIFI_CREDENTIALS.h - WiFi SSIDs and Passwords
-* * MY_BLYNK_CREDENTIALS.h - Blynk Authcodes 
+* Several #include files placed in a folder in your library directory, downloaded for edit and use here
+* * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
+* * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
 * * MY_ESP_LED_BUILTINS.h - helpers for inverted ESP8266 LED logic
-* * MY_bLYNK_COLORS.h - bunch of Blynk colors in hex
+* * MY_BLYNK_COLORS.h - bunch of Blynk colors in hex
 * * MY_SERIAL_PRINTS.h - helpers for Serial.print
-* * OTABlynkTelNet.h OR OTABlynk.h - Spiess' OTA and OTA/TelNetStream code
+* * OTABlynkTelNet.h or OTABlynk.h - Spiess' OTA and OTA/TelNetStream code (See below for more info)
 
 You will also need, of course
 * One or more SONOFF Basic (ESP8266) devices and the ability to flash the SONOFFs. (See elsewhere for How Tos.)
