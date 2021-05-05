@@ -2,7 +2,7 @@
 // Arduino for ESP8266 inverts the HIGH/LOW for the onboard LED_BUILTIN
 // Use LED_BUILTIN_HIGH and LED_BUILTIN_LOW in your sketch and all will be right with the world
 
-// #include "ESP_LED_BUILTINS.h"      // #defines LED_BUILTIN_HIGH and /LOW for uniform use across devices
+// #include "MY_ESP_LED_BUILTINS.h"   // #defines LED_BUILTIN_HIGH and /LOW for uniform use across devices
 
 #ifdef ESP8266  // There's a quirk in Arduino that has the LED_BUILTIN inverted. This corrects for it.
   #define LED_BUILTIN_HIGH LOW
