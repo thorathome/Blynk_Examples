@@ -2,9 +2,6 @@ The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino.ino is a fully-developed OT
 
 If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try. It uses some advanced features and requires flashing a SONOFF. 
 
-_For SONOFF development, I recommend working initially with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with your working code. Here's a link to a helpful tutorial on SONOFF flashing. There are others, too._
-https://medium.com/@jeffreyroshan/flashing-a-custom-firmware-to-sonoff-wifi-switch-with-arduino-ide-402e5a2f77b 
-   
 This sketch demonstrates some advanced Blynk and Arduino features.
 * Basic Blynk_WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - done my Blynk_WiFiManager.)
@@ -39,6 +36,9 @@ and IP address of 192.168.220.1
 These values (Config Portal SSID, password, IP address) are hardcoded into the sketch
 using #include files. 
 
+_For SONOFF development, I recommend working initially with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with your working sketch. Here's a link to a helpful tutorial on SONOFF flashing. There are others, too._
+https://medium.com/@jeffreyroshan/flashing-a-custom-firmware-to-sonoff-wifi-switch-with-arduino-ide-402e5a2f77b 
+   
 See https://github.com/thorathome/Blynk_Examples
    
 See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library
