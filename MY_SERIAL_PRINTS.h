@@ -1,6 +1,8 @@
 // #include <MY_SERIAL_PRINTS.h>
 // Must #define MY_SERIAL_PRINT true or false
 
+// These shortcuts let me switch off all Serial.prints at once for debugging or to conserve space, especially on SONOFFs
+
 
 #if MY_SERIAL_PRINT_ON // expand into Serial.print..
   #define mySerialBegin(s) (Serial.begin(s)) //speed
