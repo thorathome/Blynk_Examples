@@ -23,6 +23,7 @@ Arduino IDE requires
 * Several #include files placed in a folder in your library directory, downloaded for edit and use in this repository
 * * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
 * * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
+* * MY_BLYNK_WIFIMANAGER_SETUP_SSL.h - edit in you own preferences for standard Blynk_WiFiManager setup
 * * MY_ESP_LED_BUILTINS.h - helpers for inverted ESP8266 LED logic
 * * MY_BLYNK_COLORS.h - bunch of Blynk colors in hex
 * * MY_SERIAL_PRINTS.h - helpers for Serial.print
