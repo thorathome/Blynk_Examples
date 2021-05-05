@@ -6,8 +6,8 @@ This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE 
 * Basic Blynk_WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager.)_
 * Use of multiple SONOFF devices on one Blynk Authcode
-* Use of compiler constants for compile-time device selection
 * Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
+* Use of compiler constants for compile-time device selection
 * Use of EEPROM to remember the device labels in flash memory. _(LittleFS was too large for SONOFF's relatively small memory.)_
 
 For each SONOFF device, the Blynk App wants to see...
@@ -20,13 +20,13 @@ Arduino IDE requires
 * Arduino ESPcore installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
-* Several #include files placed in a folder in your library directory, downloaded for edit and use here
+* Several #include files placed in a folder in your library directory, downloaded for edit and use in this repository
 * * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
 * * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
 * * MY_ESP_LED_BUILTINS.h - helpers for inverted ESP8266 LED logic
 * * MY_BLYNK_COLORS.h - bunch of Blynk colors in hex
 * * MY_SERIAL_PRINTS.h - helpers for Serial.print
-* * OTABlynkTelNet.h or OTABlynk.h - Spiess' OTA and OTA/TelNetStream code (See below for more info)
+* * OTABlynkTelNet.h or OTABlynk.h - Spiess' (slightly modified) OTA and OTA/TelNetStream code (See below for more info)
 
 You will also need, of course
 * One or more SONOFF Basic (ESP8266) devices and the ability to flash the SONOFFs. (See elsewhere for How Tos.)
@@ -46,7 +46,7 @@ using #include files.
 _For SONOFF development, I recommend working initially with a good standard ESP8266 to get your sketch logic, UI, and OTA right. Then learn to flash the SONOFF with your working sketch. Here's a link to a helpful tutorial on SONOFF flashing. There are others, too._
 https://medium.com/@jeffreyroshan/flashing-a-custom-firmware-to-sonoff-wifi-switch-with-arduino-ide-402e5a2f77b _Once you have a working SONOFF with OTA, updating the sketch is much easier._
    
-See https://github.com/thorathome/Blynk_Examples 
+This repository https://github.com/thorathome/Blynk_Examples 
    
 See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager library. (You can download it directly from the IDE.)
 
