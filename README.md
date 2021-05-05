@@ -1,8 +1,8 @@
 The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino.ino is a **fully-developed OTA-enabled, SONOFF control system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
-**If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try. **It uses some advanced features and requires flashing a SONOFF. 
+**If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try.** It uses some advanced features and requires flashing a SONOFF. 
 
-This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino features.
+This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE features.
 * Basic Blynk_WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  (I modified his code a bit to assume WiFi connection is already in place - done my Blynk_WiFiManager.)
 * Use of EEPROM to remember the device labels in flash memory. (LittleFS was too large for SONOFF's relatively small memory.)
