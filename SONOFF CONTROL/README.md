@@ -1,6 +1,8 @@
+SONOFF_CONTROL Sketch README
+
 The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-enabled, multi-device SONOFF control system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
-[SONOFF directory contains the Arduino Blynk OTA code. Helper Files directory has required #include files.]
+[SONOFF CONTROL directory contains the Arduino Blynk OTA code. Helper Files directory has required #include files.]
 
 **If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try.** It uses some advanced features and requires flashing a SONOFF. 
 
@@ -8,7 +10,7 @@ This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE 
 * Basic Blynk_WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager. Modified code available in this repository. Thank you, Andreas Spiess.)_
 * Use of multiple SONOFF devices on one Blynk Authcode
-* Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
+* Use of Blynk's ```BLYNK_WRITE_DEFAULT()``` flexible capability
 * Use of compiler constants for compile-time device selection
 * Use of EEPROM to remember the device labels in flash memory. _(LittleFS was too large for SONOFF's relatively small memory.)_
 
@@ -24,7 +26,7 @@ Arduino IDE requires
 * Arduino ESP core installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
-* Several #include Helper Files placed in a folder in your library directory, downloaded for edit and use from this repository
+* Several #include files placed in a folder in your library directory, downloaded for edit and use from this repository
 * * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
 * * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
 * * MY_BLYNK_WIFIMANAGER_SETUP_SSL.h - edit in you own preferences for standard Blynk_WiFiManager setup
@@ -57,3 +59,4 @@ See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager libra
 
 See Andreas Spiess on YouTube for his OTA episodes. This one refers to ESP32, but is also applicable to ESP8266/SONOFF.
 https://youtu.be/1pwqS_NUG7Q
+
