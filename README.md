@@ -1,6 +1,6 @@
 The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-enabled, multi-device SONOFF control system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
-[SONOFF directory contains the Arduino Blynk OTA code. Helper Files directory has required #include files.]
+[SONOFF CONTROL directory contains the Arduino Blynk OTA code. Helper Files directory has required #include files.]
 
 **If you are new to Arduino, Blynk, or SONOFFs, this probably is not the first Arduino sketch you should try.** It uses some advanced features and requires flashing a SONOFF. 
 
