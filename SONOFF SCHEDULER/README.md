@@ -1,26 +1,29 @@
-The Arduino/Blynk sketch SONOFF_SCHEDULER.ino is an **OTA-enabled, multi-device SONOFF control system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
+**THIS IS WIP. SKETCH NOT YET LOADED.  **
+
+The Arduino/Blynk sketch SONOFF_SCHEDULER.ino is an **OTA-enabled, multi-device SONOFF Scheduling system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
 [SONOFF directory contains the Arduino Blynk OTA code. Helper Files directory has required #include files.]
 
-**This sketch schedules multiple SONOFFs controlled by the sketch SONOFF_OTA…** This sketch also uses advanced Blynk and Arduino IDE features.  It runs on ESP32 and ESP8266, is noticeably faster on ESP32. 
+**This sketch Schedules multiple SONOFFs controlled by the sketch SONOFF_OTA…** This sketch also uses advanced Blynk and Arduino IDE features.  It runs on ESP32 and ESP8266, AND is noticeably faster on ESP32. 
 
 This sketch demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE features.
 * Basic Blynk_WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager. Modified code available in this repository. Thank you, Andreas Spiess.)_
-* Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
-* Use of Blynk’s Bridge capability to ‘talk to’ the SONOFFs
+* Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability (to handle multiple Schedules)
+* Use of Blynk’s Bridge capability to ‘talk to’ the SONOFFs. (The Scheduler does not 'listen' to the SONOFFs, though!)
 * Use of compiler constants for compile-time selection of
-* * Number of SONOFFs to control (currently at 6)
-* * Number of independent schedules (currently at 3)
-* Use of LittleFS to remember the schedule information in flash memory. 
+* * Number of SONOFFs to Schedule (currently set at 6)
+* * Number of independent Schedules (currently set at 3)
+* Use of LittleFS to remember the Schedule information in flash memory. 
 
 For each Schedule, the Blynk App wants to see...
-* TWO Blynk Time Input Widgets, one for entering schedule info, the other for display
+* TWO Blynk Time Input Widgets, one for entering schedule info, the other for displaying the week's schedule
 * ONE for EACH SONOFF Blynk Styled Button to Include/not-include that SONOFF in this Schedule
 * (Optional) Blynk Text Input Widget (force a Reboot)
-* (Virtual Pins are hardcoded into the sketch. 
-* (Assumes all the SONOFFs are on one Blynk Authcode, Virtual Pins hardcoded in the sketch using #compiler directives.)
-* **THEREFORE, for 3 Schedules and 6 SONOFFs, you'll want 6 Time Input Widgets and 18 Styled Buttons.)**
+* (Virtual Pins are hardcoded into the sketch) 
+* (Assumes all the SONOFFs are on one Blynk Authcode)
+* (Virtual Pins hardcoded in the sketch using #compiler directives)
+* **(THEREFORE, for 3 Schedules and 6 SONOFFs, you'll want 6 Time Input Widgets and 18 Styled Buttons.)**
 
 Arduino IDE requires 
 * Arduino ESP core installed (for the ESP8266-based SONOFFs)
