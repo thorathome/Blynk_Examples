@@ -1,3 +1,5 @@
+SONOFF_OTA Sketch README
+
 The Arduino/Blynk sketch SONOFF_OTA_601_20210505.ino is a **fully-developed OTA-enabled, multi-device SONOFF control system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
 [SONOFF CONTROL directory contains the Arduino Blynk OTA code. Helper Files directory has required #include files.]
@@ -8,7 +10,7 @@ This sketch also demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE 
 * Basic Blynk_WiFiManager Config Portal configuration and use
 * Wonderful OTA code from Andreas Spiess, The Guy With the Swiss Accent, from his YouTube video #332  _(I modified his code a bit to assume WiFi connection is already in place - set up by Blynk_WiFiManager. Modified code available in this repository. Thank you, Andreas Spiess.)_
 * Use of multiple SONOFF devices on one Blynk Authcode
-* Use of Blynk's BLYNK_WRITE_DEFAULT() flexible capability
+* Use of Blynk's ```BLYNK_WRITE_DEFAULT()``` flexible capability
 * Use of compiler constants for compile-time device selection
 * Use of EEPROM to remember the device labels in flash memory. _(LittleFS was too large for SONOFF's relatively small memory.)_
 
