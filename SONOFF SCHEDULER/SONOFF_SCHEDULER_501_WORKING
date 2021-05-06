@@ -1,0 +1,1524 @@
+#define SKETCH_NAME "SONOFF_SCHEDULER_501_WORKING"
+#define SERIAL_SPEED 230400
+
+// Works with ESP8266 and ESP32 as of May 2021. Runs faster, looks better on ESP32
+
+// NOTE: BREAK UP INITIALIZE BLYNK WIDGETS BECAUSE IT TAKES TOO LONG TO EXECUTE - 9+ SECONDS
+// Currently initializeBlynkWidgets() is only called in BLYNK_CONNECTED. Reboot to reset app widgets
+
+// This is debugging info on initializeBlynkWidgets, which takes 9.5 seconds to run. 
+// It gets called in setup and in BLYNK_ and BLYNK_APP_CONNECTED
+#define DEBUG_INITIALIZE_BLYNK_WIDGETS  false
+//#define DEBUG_INITIALIZE_BLYNK_WIDGETS  true
+
+
+
+// OTA and TelNetStream code below from from Andreas Spiess on YouTube channel.  
+#define USE_OTA true
+//define USE_OTA false
+
+#if USE_OTA
+  #define USE_TELNET true
+  //#define USE_TELNET false
+#endif
+
+/* this controls library loads, the recurring call in <loop> and TelNetStream output */
+#if USE_OTA && USE_TELNET
+  #include "OTABlynkTelNet.h"      // stub from Andreas Spiess in my own directory
+#elif USE_OTA && ! USE_TELNET
+  #include "OTABlynk.h"            // stub from Andreas Spiess in my own directory
+#endif
+
+
+
+// Set up File systems BEFORE getting into Blynk-WiFiManager
+#define USE_LITTLEFS      true     // true = LittleFS  false = EEPROM
+
+// LittleFS file name for saving the Schedule and the Includes
+#define SCHEDULE_FILE_NAME         "/SONOFF.SCHED"
+#define INCLUDES_FILE_NAME         "/SONOFF.INCLUDES"
+
+
+
+#define MY_SERIAL_PRINT_ON true    // All mySerialPxxx to work as written
+//#define MY_SERIAL_PRINT_ON false   // NO Serial.printing at all
+
+#if MY_SERIAL_PRINT_ON
+  #define BLYNK_PRINT       Serial // Generates Blynk debug prints. Comment out if not needed, saving space 
+  #define BLYNK_WM_DEBUG    0      // 0 - 3
+#endif
+#include "MY_SERIAL_PRINTS.h"      // #defines mySerialP, mySerialPln, mySerialPfx, mySeriamBegin for mySerialP & ...ln if MY_SERIAL_PRINT is true, No-op if false
+
+// This stops two verbose print routines: printSchedule and printIncludes !
+#define STOP_VERBOSE_PRINTING true
+//#define STOP_VERBOSE_PRINTING false
+
+
+
+// My shortcut libraries
+#include "MY_WIFI_CREDENTIALS.h"   // #defines MY_WIFI_SSID/2 AND MY_WIFI_PASSWORD/2
+#include "MY_BLYNK_CREDENTIALS.h"  // #defines MY_BLYNK_SERVER and MY_xxx_AUTHCODE
+#include "MY_ESP_LED_BUILTINS.h"   // #defines LED_BUILTIN_HIGH and _LOW for uniform use across ESP32 and ESP8266 devices
+#include "MY_BLYNK_COLORS.h"       // #defines a bunch of handy Blynk colors
+
+// Cutting down on the brightness of the Blynk LED Widget
+#define BLYNK_LED_WIDGET_MAX_BRIGHTNESS 250        // Led Widget is [0-255]  250 = not very bright (from 255)
+//#define BLYNK_LED_WIDGET_MAX_BRIGHTNESS 150        // Led Widget is [0-255]  150 = not very bright (from 255)
+#define LED_BUILTIN_MAX_BRIGHTNESS      300
+
+// Blynk WiFiManager needs this    //Authcode for SONOFF Controller (NOT for bridging to SONOFFs)
+#define MY_BLYNK_AUTHCODE          MY_SONOFF_CONTROL_AUTHCODE  // different from SONOFFs' authcode!
+
+
+
+// Everybody wants a Host Name - Blynk, OTA, the Blynk_WM Config Portal, and me
+#define DEVICE_NAME                "SONOFF-SCHEDULER"  // Blynk WiFiManager needs this
+#define BLYNK_HOST_NAME            DEVICE_NAME     // Shows up in Config Portal as Tab Name
+                                                   // ALSO shows up in Router table as device name
+#define OTA_BOARD_NAME             BLYNK_HOST_NAME // used in OTA only
+#define CONFIG_PORTAL_SSID         OTA_BOARD_NAME  // Blynk_WM Config Portal SSID
+
+
+
+// Set up Blynk WiFiManager
+///////////////////////////////////////////////////////////////////////////////////////////
+#define USE_SSL true
+#if USE_SSL
+  #include "MY_BLYNK_WIFIMANAGER_SETUP_SSL.h"      // SSL for Blynk not working on ESP8266 devices as of March 2021
+#else                                              // Blynk_WiFiManager 1.3.0 (may have) fixed that (19 April 2021)
+  #include "MY_BLYNK_WIFIMANAGER_SETUP_NO_SSL.h" 
+#endif
+
+
+
+// We have multiple independent schedules, each with its own scheduling and SONOFF include widgets
+// Using TimeInput Widgets for each schedule [schedule][0] => SET time schedule widget, [1] => DISPLAY currenct schedule
+// Each schedule has 2 InputTime Widgets to SET and DISPLAY the schedules
+// Each schedule has Include buttons for each of the SONOFFs
+
+#define NUMBER_OF_SCHEDULES         3              // number of different schedules to save and check
+
+// VPins for the two time widgets for each schedule [0] => SET Widget, [1] => DISPLAY daily schedule Widget
+//                          scheduleDex,                     SET SCHEDULE col 0           DISPLAY SCHEDULE col 1         
+const int  timeWidgetVpin [NUMBER_OF_SCHEDULES][2]       = {         0,                         10,     // Time Input Vpins
+                                                                     1,                         11,     // Time Input Vpins
+                                                                     2,                         12 };   // Time Input Vpins
+// Virtual Pin and label for the Update (hidden) Reboot/Restart feature
+#define UPDATE_VPIN                 V3
+#define UPDATE_WIDGET_LABEL         "Reboot/Restart/Reset CONTROLLER"
+
+// Widget Label Names for the Time Widgets
+//                                scheduleDex,                SET SCHEDULE col 0           DISPLAY SCHEDULE col 1         
+const char *scheduleWidgetLabel [NUMBER_OF_SCHEDULES][2] = { "Set A Start/Stop by Day",   "Daily Schedule A",   // Widget names
+                                                             "Set B Start/Stop by Day",   "Daily Schedule B",   // Widget names
+                                                             "Set C Start/Stop by Day",   "Daily Schedule C" }; // Widget names
+
+#define NUMBER_OF_DAYS 7 // 7 days in a week
+
+// Each schedule has start/stop times for each day/
+// These values get saved in the file SCHEDULE_FILE_NAME
+long startTime [NUMBER_OF_SCHEDULES][NUMBER_OF_DAYS]; // Start times for 7 days - FOR EACH DIFFERENT SCHEDULE
+long stopTime  [NUMBER_OF_SCHEDULES][NUMBER_OF_DAYS]; // Stop times for 7 days
+
+// Colors of the SET TIME widget (Left hand) when IN and OUT of time window
+#define IN_ON_TIME_COLOR           BLYNK_ORANGE       // Time Input Widget for SET TIME color when in ON time                    
+#define IN_OFF_TIME_COLOR          BLYNK_GREEN        // Time Input Widget for SET TIME color when in OFF time   
+
+
+
+//**// Each schedule has SONOFF buttons to Include In or Out in the schedule
+#define NUMBER_OF_SONOFFS           6                 // Number of SONOFFs to control
+
+//**// Vpins for the Include buttons for each SCHEDULE and each SONOFF   #1  #2  #3  #4  #5  #6
+const int includeButtonVpin [NUMBER_OF_SCHEDULES][NUMBER_OF_SONOFFS] = { 20, 30, 40, 50, 60, 70,    // Schedule A/[0] Vpins
+                                                                         21, 31, 41, 51, 61, 71,    // Schedule B/[1] Vpins
+                                                                         22, 32, 42, 52, 62, 72 };  // Schedule C/[2] Vpins
+//**// Widget names for each SONOFF (in all Schedules)  #1       #2      #3      #4       #5       #6
+const char *includeButtonName [NUMBER_OF_SONOFFS] = { "Larry", "Curly", "Moe", "Rocky", "Boris", "Natasha" };   // Widget Names
+
+//**// These are the Virtual Pins in the SONOFF Sketches/Apps --- NOT this control app
+//                                             #1  #2  #3  #4  #5  #6 // Virtual pins BRIDGED to individual remote SONOFF devices
+int bridgedSONOFFVpins [NUMBER_OF_SONOFFS] = { 20, 30, 40, 50, 60, 70 }; 
+//**// Use MY_REAL_SONOFF_AUTHCODE for all three bridged SONOFFs - All SONOFFS use the same Authcode
+
+
+
+// Blynk Widget info common to all Include Buttons
+#define INCLUDE_BUTTON_ONLABEL     "In"               // Button inside label when ON (include)
+#define INCLUDE_BUTTON_OFFLABEL    "Out"              // Button inside label with OFF (do not include) 
+
+#define INCLUDE_BUTTON_ONCOLOR     BLYNK_BLACK        // Include button ON color
+#define INCLUDE_BUTTON_OFFCOLOR    BLYNK_DARK_BLUE    // Include button OFF color
+#define INCLUDE_BUTTON_ONBACKCOLOR BLYNK_GREEN
+#define INCLUDE_BUTTON_OFFBACKCOLOR BLYNK_DARK_BLUE
+// What is missing is the Widget Outline or Solid choice in the app
+
+// We use Blynk WidgetBridge to talk to the individual SONOFFs
+WidgetBridge bridgeToSONOFFs ( V90 ); // Could be any Virtual Pin
+
+
+
+// True if the named SONOFF is included in a schedule - see Include button setting
+bool includeSONOFFinThisSchedule [NUMBER_OF_SCHEDULES][NUMBER_OF_SONOFFS]; 
+
+
+
+// We change SONOFF State if we don't know it, when the Includes changes, or if the clock crosses a switching time
+int SONOFFstate [NUMBER_OF_SCHEDULES];                // 2 different schedules
+#define ON         1                                  // Used in SONOFFstate
+#define OFF        0
+#define DONT_KNOW -1
+
+
+
+// We turn each SONOFF on or off x times to make certain they actually got the signal
+int repeatedSwitchingCycles [NUMBER_OF_SCHEDULES];    // Counts how many ON or OFF repeats we have done so far (for each schedule) 
+int scheduleDexToSwitchONfrom;                        // Tells us which schedule is causing the included SONOFFs to switch ON
+int scheduleDexToSwitchOFFfrom;                       // Tells us which schedule is causing the included SONOFFs to switch OFF
+
+
+
+// THIS SKETCH USES TIMERS FOR CHECKING THE TIME, FOR POSTING THE SCHEDULE, FOR TURNING SONOFFS ON/OFF
+BlynkTimer myTimer;
+
+// Blynk timers to blink a heartbeat LED on and off
+#define USE_BLYNK_HEARTBEAT false  // No Blynk LED (in app) needed here. Time Widgets change every second or soto show life
+
+#if USE_BLYNK_HEARTBEAT            // Blynk LED Heartbeat not needed for this app- ONBOARD LED nly
+  #define HEARTBEAT_VPIN           0
+#endif
+int heartbeatLEDinterval = 5000;   // interval between heartbeats for onboard and Blynk Virtual LED in millisec 
+int heartbeatLEDtimerID; 
+
+int heartbeatLEDduration = 750;    // duration of each blink in millisec (set as an interval timer)
+int heartbeatLEDdurationTimerID;
+bool heartbeatLEDon = false;       // this lets me use the same routine for the turn-on timer and the turn-off interval
+
+
+// Blynk timer to check to see when things go ON or OFF
+int checkForActionInterval = 9 * 1234;     // 9 seconds
+int checkForActionID; 
+
+
+// Blynk Timer to display revolving Start/Stop times 
+int refreshDisplayDuration = 2567;         // 2.5 seconds
+int refreshDisplayID; 
+
+
+// Blynk Timer to hit SONOFF ON or OFF a few times just to make sure
+int repeatedOnOffCycleDuration = 1012;     // repeat every second three times
+int repeatedOnOffCycleID; 
+#define SWITCH_REPEAT_CYCLES 3             // turn SONOFFs on or off three times in a row, just to make sure
+
+
+
+// Need Blynk's RTC Widget to get actual time onto the ESP
+// Good RTC stuff at https://community.blynk.cc/t/rtc-code-to-show-value-on-widget/5386/6
+#include <WidgetRTC.h>
+WidgetRTC BlynkRTC; 
+//#define RTC_WIDGET_VPIN            99              // RTX Vpin not really used anywhere... could change without impact
+//BLYNK_ATTACH_WIDGET ( BlynkRTC, RTC_WIDGET_VPIN ); // Didn't work
+
+
+
+// TimeLib data structures are used in printLocalTime()
+#include <TimeLib.h>    // https://github.com/PaulStoffregen/Time
+long estOffset_sec = -5 * 60 * 60;                 // Eastern Standard Time -5 hours from GMT
+long daylightOffset_sec =  1 * 60;                 // DST in seconds 1 hour (TimeZone manages this automatically)
+#define NTP_SYNC_INTERVAL 100 * 60                 // Refresh time every 100 minutes (I hope) 
+
+// Blynk uses day of week from 1-7 with Monday=1.  TimeLib has Sunday=1. Arrays start at 0. Thanks, all!
+const char *dayOfWeek [7] = { "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" }; 
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SETUP WIFI, BLYNK, HEARTBEAT, ANYTHING ELSE THAT NEEEDS TO BE SET UP
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void setup() 
+{
+  // Never enough good printouts
+  mySerialBegin ( SERIAL_SPEED );
+  delay ( 500 );  
+  mySerialPln ( "\n\n=======================================" );
+  mySerialP   ( SKETCH_NAME ); 
+  #if USE_SSL
+    mySerialPln ( " ** Using Blynk_WiFiManager and SSL **" );  
+  #else
+    mySerialPln ( " ** Using Blynk_WiFiManager and NOT Using SSL **" );  
+  #endif
+
+  
+  // Initialize Onboard LED and Turn it OFF
+#if ESP8266
+  pinMode ( LED_BUILTIN, OUTPUT );  
+#elif ESP32
+  // no pinMode needed for ESP32 using ledc library
+  ledcSetup ( LEDchannel, PWMfrequency, PWMresolution ); // Create CHANNEL independent of actual LED pin
+  //ledcAttachPin ( LED_BUILTIN, LEDchannel );           // Associate LED_PIN with CHANNEL (done in Heartbeat)
+#endif
+  digitalWrite ( LED_BUILTIN, LED_BUILTIN_LOW ); 
+
+
+  // Let's see what files we have in Flash 
+  if ( FileFS.begin() ) mySerialPln ( "FileFS.begin() worked fine" ); 
+  else 
+  {
+    mySerialPln ( "\nERROR: FileFS.begin()\n\n" ); 
+    fileSystemBeginFailed(); // reformat and reboot
+  }
+  
+  printDir ( "/" ); 
+
+  // Use when needed - like adding another SONOFF
+  // FileFS.remove ( INCLUDES_FILE_NAME ); printDir ( "/" ); // NOT NEEDED. Includes too easy to set up manually
+
+
+  // Connect to WiFi and Blynk
+  connectToWLANandBlynk();  // Connect to WiFi, then to Blynk server
+  // calls initialzeBlynkWidgets (9.5 seconds) from BLYNK_CONNECTED
+  
+
+  // Set up OTA
+  setupOTA();  
+
+  
+  // Set up clock with Blynk's RTC Widget
+  setupAndSyncBlynkRTC();  
+
+  
+  // We are talking to the three SONOFFs through Blynk Bridge, need the SONOFF authcode (all SONOFFs on 1 Authcode)
+  bridgeToSONOFFs.setAuthToken ( MY_REAL_SONOFF_AUTHCODE ); // for writing to all three SONOFFs
+
+
+  // Look at Flash memory and see what's there AFTER setting everything up
+  printDir ( "/" ); 
+
+
+  // We do not know state of the SONOFFs when we start up - set to DONT-KNOW
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ ) SONOFFstate [scheduleDex] = DONT_KNOW; 
+
+  
+  // Retrieve any existing schedule and include info saved in Flash
+  retrieveSchedulesFromLittleFS(); 
+  retrieveIncludesFromLittleFS(); 
+
+
+  // Blynk timers control heartbeat, status checking for on/off vs schedule, etc. 
+  setupBlynkTimers();  // Establish Blynk timers after Blynk is connected
+
+
+  // Set Blynk Virtual Heartbeat and LED_BUILTIN OFF
+  heartbeatLEDon = false;  
+  digitalWrite ( LED_BUILTIN, LED_BUILTIN_LOW ); 
+#if USE_BLYNK_HEARTBEAT
+  Blynk.virtualWrite ( HEARTBEAT_VPIN, 000 );  
+#endif
+  heartbeatLEDblink(); // start first heartbeat (uses timers, too)
+
+
+  // initial check to see if we turn SONOFFs ON and OFF
+  checkForAction();  // this gets called periodically on a timer from now on
+
+
+  mySerialPln ( "\nSetup complete \n*******************************\n*******************************\n" );  
+
+} //end setup
+
+
+
+
+
+// KEEPING IT SIMPLE
+void loop()
+{
+  Blynk.run();
+  myTimer.run();  
+
+  #if USE_OTA
+    #if defined ( ESP32_RTOS ) && defined ( ESP32 )
+    #else // If you do not use FreeRTOS on ESP32, you have to regulary call the OTA handle method.
+      ArduinoOTA.handle();
+    #endif
+  #endif
+  
+} // end loop
+
+
+
+
+
+// Set up OTA for ESP8266 and ESP32 if requested by USE_OTA (Does nothing if not requested)
+void setupOTA()
+{
+#if USE_OTA
+  // Set up OTA
+  setupOTA ( OTA_BOARD_NAME ); // already connected to WiFi
+
+  // Blink the onboard LED 5 times to signal goodness
+  for ( int i = 1; i <= 5; i++)
+  {
+    digitalWrite ( LED_BUILTIN, LED_BUILTIN_HIGH );   delay ( 100 ); 
+    digitalWrite ( LED_BUILTIN, LED_BUILTIN_LOW );    delay ( 100 );        
+  }
+#endif
+}
+
+
+
+
+// LED HEARTBEAT
+/* Blink the on-board LED AND the Virtual Blynk LED ... AND any TelNet output
+ * If LED is off, it turne the LEDs on, then sets a timer to turn LED off
+ * When the timer triggers, same routine turns the LEDs off
+ */
+void heartbeatLEDblink()
+{
+  if ( heartbeatLEDon ) // LED is ON. Turn it OFF
+  {
+//    digitalWrite ( LED_BUILTIN, LED_BUILTIN_LOW ); // On-board LED off
+
+#if USE_TELNET
+    TelnetStream.println ( " ..." );
+#endif
+
+    // Turn LED_BUILTIN OFF and Turn Blynk LED Widget OFF
+    #if ESP8266
+      digitalWrite ( LED_BUILTIN, LED_BUILTIN_LOW ); // On-board LED off
+      //analogWrite ( LED_BUILTIN, LED_BUILTIN_LOW );  
+    #elif ESP32
+      ledcWrite ( LEDchannel, 0 );                     // Set LED channel to OFF    
+      ledcDetachPin ( LED_BUILTIN );                   // DIS-Associate LED_PIN with CHANNEL 0
+    #endif
+#if USE_BLYNK_HEARTBEAT
+    Blynk.virtualWrite ( HEARTBEAT_VPIN, 000 );         // Blynk LED off
+
+    mySerialPln ( " ..." ); 
+#endif
+  }  
+  
+  else // LED is OFF. Turn it ON
+  {
+    // Turn LED_BUILTIN ON (via PWM) and Turn Blynk LED Widget ON
+    #if ESP8266 
+      //digitalWrite ( LED_BUILTIN, LED_BUILTIN_HIGH );             // On-board LED ON
+      analogWrite ( LED_BUILTIN, 1024 - LED_BUILTIN_MAX_BRIGHTNESS ); // On-board LED ON - ESP8266 inverted logic
+    #elif ESP32
+      ledcAttachPin ( LED_BUILTIN, 0 );                             // RE-Associate LED_PIN with CHANNEL 0
+      ledcWrite ( LEDchannel, LED_BUILTIN_MAX_BRIGHTNESS );         // Set LED channel ON   
+    #endif
+#if USE_BLYNK_HEARTBEAT
+    Blynk.virtualWrite ( HEARTBEAT_VPIN, BLYNK_LED_WIDGET_MAX_BRIGHTNESS );       // BLynk LED on
+
+    mySerialP ( "... heartbeat of <" ); mySerialP ( SKETCH_NAME ); 
+    mySerialP ( "> WiFi.status() = " ); mySerialP ( WiFi.status() );   
+    mySerialP ( ": " ); printLocalTime ( 1 ); mySerialP ( " " );  
+#endif 
+   
+#if USE_TELNET
+    TelnetStream.print ( "... heartbeat of <" ); TelnetStream.print ( SKETCH_NAME ); 
+    TelnetStream.print ( "> WiFi.status() = " ); TelnetStream.print ( WiFi.status() );  
+    TelnetStream.print ( ": " ); printLocalTime ( 2 ); TelnetStream.print ( " " );  
+#endif    
+  
+    // Set a timer to turn off the heartbeat LEDs in a bit  
+    heartbeatLEDdurationTimerID = myTimer.setTimeout ( heartbeatLEDduration, heartbeatLEDblink ); 
+    
+  }
+  heartbeatLEDon = ! heartbeatLEDon; // flip status
+
+} //end heartbeatLEDblink
+
+
+
+
+
+// SET UP BLYNK TIMER FOR HEARTBEAT (and anything else you may want later)
+void setupBlynkTimers()
+{
+  // Interval timers for heartbeatLED (Blynk LED and onboard LED)
+  // Introduce a little randomness to all the Heartbeat LEDs have a little different timing
+  mySerialPln ( "Setting up Blynk timers" );  
+
+  int randomizedInterval;
+  randomizedInterval = heartbeatLEDinterval + random ( -500, +500 );  // plus of minus half a second
+  mySerialP ( "... HeartbeartLEDinterval = " ); mySerialPln ( randomizedInterval );
+  heartbeatLEDtimerID = myTimer.setInterval ( randomizedInterval, heartbeatLEDblink );  
+
+
+  // Every so often, we check to see if we are in the start/stop window to switch the SONOFFs
+  // Introduce a little randomness to all the Heartbeat LEDs have a little different timing
+  randomizedInterval = checkForActionInterval + random ( -250, +250 );   // plus of minus quarter of a second
+  mySerialP ( "... checkForActionInterval = " ); mySerialPln ( randomizedInterval );
+  checkForActionID    = myTimer.setInterval ( randomizedInterval, checkForAction ); 
+
+
+  // We revolve the display of Start/Stop times by weekday AND update state of Include buttons
+  mySerialP ( "... refreshDisplayDuration = " ); mySerialPln ( refreshDisplayDuration );
+  refreshDisplayID = myTimer.setInterval ( refreshDisplayDuration, refreshDisplay );   
+
+
+  mySerialPln ( "... Blynk timers set up." );  
+  
+} //end setupBlynkTimers
+
+
+
+
+
+// CONNECT TO WLAN AND BLYNK
+// Connect to Blynk once WiFi connection establishked
+// Uses compiler switches for WiFiManager, SSL, other choices
+void connectToWLANandBlynk()
+{
+  // Setup WLAN and Blynk
+  mySerialP ( "\nSetting up WLAN and Blynk with WiFiManager" );  
+  mySerialPln ( "Starting Blynk.begin" );  
+
+  // SET UP THE CONFIG PORTAL CREDENTIALS AND CONNECTION INFO
+  Blynk.setConfigPortalChannel ( 0 );       // 0 -> Use a random WiFi 2.4GHz channel for the Config Portal
+  Blynk.setConfigPortal ( CONFIG_PORTAL_SSID, CONFIG_PORTAL_PASSWORD ); // Set up Config Portal SSID & Password
+  Blynk.setConfigPortalIP ( IPAddress ( CONFIG_PORTAL_IPADDRESS ) );    // Set up IP address for Config Portal once connected to WiFi
+
+
+  mySerialP ( "     " ); 
+  mySerialP ( "Blynk.setConfigPortal(" ); 
+  mySerialP ( CONFIG_PORTAL_SSID );     mySerialP ( "," );  
+  mySerialP ( CONFIG_PORTAL_PASSWORD ); mySerialPln ( ")" );   
+
+  mySerialP ( "     " ); 
+  mySerialP ( "Config Portal will be found at IP: " ); mySerialP ( IPAddress ( CONFIG_PORTAL_IPADDRESS ) );  
+  mySerialPln ( "\n" );  
+
+    
+  //Blynk.config ( blynkAuth );    // not needed with WM 
+  //WiFi.mode ( WIFI_AP );  
+  Blynk.begin ( BLYNK_HOST_NAME ); // DHCP (router) device name
+  
+
+  if ( Blynk.connected() ) 
+  {
+#if ( USE_LITTLEFS || USE_SPIFFS)
+    mySerialPln ( "\nBlynk using " + String ( CurrentFileFS ) + " connected. Board Name : " + Blynk.getBoardName() );
+#else
+    mySerialPln ( "\nBlynk using EEPROM connected. Board Name : " + Blynk.getBoardName() );
+    mySerialPf3 ( "EEPROM size = %d bytes, EEPROM start address = %d / 0x%X\n", EEPROM_SIZE, EEPROM_START, EEPROM_START );
+#endif  
+        
+    mySerialPln ( "Blynk connected just fine" ); 
+    mySerialP   ( "  IP address  " ); mySerialPln ( WiFi.localIP() ) ;
+    mySerialP   ( "  MAC address " ); mySerialPln ( WiFi.macAddress() );  
+    mySerialPln();  
+  }
+  else mySerialPln ( "Blynk NOT CONNECTED \n\n" );  
+
+} // end connectToWLANandBlynk
+
+
+
+
+
+// BLYNK_CONNECTED GETS CALLED WHEN CONNECTING TO BLYNK SERVERS
+// GETS CALLED IMMEDIATELY ON FIRST CONNECT TO BLYNK SERVER, TOO
+BLYNK_CONNECTED()
+{
+  mySerialPln ( "\nBLYNK_CONNECTED..." );  
+
+  // Set up the Blynk App with all the static info (colors and labels)
+  initializeBlynkWidgets();  
+  
+} // end BLYNK_CONNECTED
+
+
+
+
+
+
+// BLYNK_APP_CONNECTED GETS CALLED WHEN APP CONNECTS TO BLYNK SERVERS
+// IT IS NOT SUPER RELIABLE !  
+BLYNK_APP_CONNECTED()
+{
+  mySerialPln ( "\n\nBLYNK_APP_CONNECTED...\n\n" );  
+
+  // Set up the Blynk App with all the static info (colors and labels)
+  // initializeBlynkWidgets();  // deleted this to speed up App startup
+
+} // end BLYNK_APP_CONNECTED
+
+
+
+
+
+void fileSystemBeginFailed()
+{
+  mySerialPln ( "\n\n*************\n*************\n*************\n*************\n" ); 
+  mySerialPln ( "\n\n*************\n*************\n*************\n*************\n" ); 
+  mySerialPln ( "\n\n*************\n** LittleFS.begin() failed... formatting now. \n" ); 
+  mySerialPln ( "\n\n*************\n*************\n*************\n*************\n" ); 
+  mySerialPln ( "\n\n*************\n*************\n*************\n*************\n" ); 
+
+  FileFS.format();
+  
+} // end fileSystemBeginFailed 
+
+
+
+
+#if ESP8266
+// LittleFS file directory listing
+void printDir ( const char * dirname ) 
+{
+  mySerialPf1 ("\nPrinting FS directory: %s\n", dirname);
+  if ( ! FileFS.begin() ) fileSystemBeginFailed();
+
+  Dir root = LittleFS.openDir(dirname);
+
+  while (root.next()) {
+    File file = root.openFile("r");
+    mySerialP("  FILE: ");
+    mySerialP(root.fileName());
+    mySerialP("  SIZE: ");
+    mySerialP(file.size());
+    time_t cr = file.getCreationTime();
+    time_t lw = file.getLastWrite();
+    file.close();
+    struct tm * tmstruct = localtime(&cr);
+    mySerialPf6 ("    CREATION: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+    tmstruct = localtime(&lw);
+    mySerialPf6 ("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+    mySerialPln();  
+  }
+} // end printDir ESP8266
+
+#else // ESP32 ( ESP32 LittleFS library does not have the Dir object?!?!?!? ) 
+// Print our all file names in LittleFS/SPIFFS
+void printDir ( const char * dirname ) // parameter unused on ESP32
+{
+  mySerialPln ( "\nPrinting FS directory." );   
+  File root = FileFS.open ( "/" );
+ 
+  File file = root.openNextFile();
+ 
+  while(file)
+  {
+    mySerialP ( "File name: " );
+    mySerialPln ( file.name() );
+ 
+    file = root.openNextFile();
+  }
+} // end printDir ESP32
+
+#endif // end ESP8266/ESP32
+
+
+
+
+
+// Read the Includes file and fill in start/stop times
+// Each SONOFF is stored as 0 (exclude) or 1 (include) Larry, Curly, Moe, Boris, one each line
+void retrieveIncludesFromLittleFS()
+{
+  mySerialPln ( "\nRetrieving Includes from LittleFS" );  
+    
+  File fileName = FileFS.open ( INCLUDES_FILE_NAME, "r" ); 
+  
+  if ( ! fileName )  // Includes file did not open - create it 
+  {                
+    mySerialP   ( "Could not open the Includes file " );  mySerialPln ( INCLUDES_FILE_NAME ); 
+    mySerialPln ( "Creating new file... all zeros" ); 
+    
+    // Set all Includes to all zeros/false
+    for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+    {
+      for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+      {
+        includeSONOFFinThisSchedule [scheduleDex][SONOFFdex] = false; 
+      }
+    }
+    saveIncludesToLittleFS(); 
+  }
+  else
+  {
+    mySerialP ( "Successfully opened Includes file... reading " ); mySerialPln ( INCLUDES_FILE_NAME ); 
+    
+    String readStr; 
+
+    // Read for each SCHEDULE
+    for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+    {       
+      mySerialP ( "*** retrieveIncludesFromLittleFS Schedule " ); mySerialP ( scheduleDex ); mySerialPln ( " ***" ); 
+
+      // Read for each SONOFF
+      for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+      {
+        int includeYesNo; 
+
+        readStr = fileName.readStringUntil ( '\n' ); 
+        mySerialP ( "Includes file: " ); mySerialPln  ( readStr );    
+        includeYesNo = readStr.toInt(); 
+        if ( includeYesNo == 1 ) 
+          includeSONOFFinThisSchedule [scheduleDex][SONOFFdex] = true; 
+        else 
+          includeSONOFFinThisSchedule [scheduleDex][SONOFFdex] = false;  
+      }
+    }
+
+    printIncludes();  
+    fileName.close(); 
+  }  
+  mySerialPln ( "retrieveIncludesFromLittleFS complete.\n" );  
+  
+} // end retrieveIncludesFromLittleFS
+
+
+
+
+
+// Read the Schedule file and fill in start/stop times
+void retrieveSchedulesFromLittleFS()
+{
+  mySerialPln ( "\nRetrieving schedule from LittleFS" );  
+    
+  File fileName = FileFS.open ( SCHEDULE_FILE_NAME, "r" ); 
+  if ( ! fileName ) 
+  {                // Schedule file did not open. Creat a new one. 
+    mySerialP   ( "Could not open the schedule file " );  mySerialPln ( SCHEDULE_FILE_NAME ); 
+    mySerialPln ( "Creating new file... all zeros" ); 
+    
+    // Set Schedule to all zeros (not yet set)
+    for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+    {
+      for ( int dayDex = 0; dayDex < NUMBER_OF_DAYS; dayDex ++ ) startTime [scheduleDex][dayDex] = stopTime [scheduleDex][dayDex] = 0;        
+    }
+    
+    saveSchedulesToLittleFS(); 
+  }
+  else
+  {
+    mySerialPln ( "Successfully opened Schedule file... reading." ); 
+    
+    String readStr; 
+    
+    for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+    {    
+      mySerialP ( "*** retrieveSchedulesFromLittleFS Schedule " ); mySerialP ( scheduleDex ); mySerialPln ( " ***" ); 
+
+      for ( int dayDex = 0; dayDex < NUMBER_OF_DAYS; dayDex++ )
+      {
+        readStr = fileName.readStringUntil ( '\n' ); 
+        startTime [scheduleDex][dayDex] = readStr.toInt();  
+        mySerialP ( "Read: " ); mySerialP ( readStr ); mySerialP ( ", " );         
+
+        readStr = fileName.readStringUntil ( '\n' ); 
+        stopTime [scheduleDex][dayDex] = readStr.toInt();  
+        mySerialPln ( readStr ); 
+      }
+      printSchedule ( scheduleDex );  
+    }  
+    fileName.close(); 
+  }
+  mySerialPln ( "retrieveSchedulesFromLittleFS complete.\n" );  
+  
+} // end retrieveSchedulesFromLittleFS
+
+
+
+
+
+// Save start/stop times to the Schedule file
+void saveIncludesToLittleFS()
+{
+  mySerialPln ( "\n\n*************************************" ); 
+  mySerialPln (     "*************************************" ); 
+  mySerialPln (     "***  SAVING includes to LittleFS ****" );  
+  mySerialPln (     "*************************************" ); 
+  
+  File fileName = FileFS.open ( INCLUDES_FILE_NAME, "w" ); 
+  if ( ! fileName )   // Includes file for writing could not open ??
+  {              
+    mySerialP ( "Could not open the Includes file " );  mySerialPln ( INCLUDES_FILE_NAME ); 
+  }
+  else
+  {
+    printIncludes(); 
+    mySerialPln ( "\nSaving Includes to file" ); 
+
+    // Save the Include info for each of the SONOFFS
+    for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+    {
+      for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+      {
+        fileName.println ( includeSONOFFinThisSchedule [scheduleDex][SONOFFdex] ); 
+      }
+    }
+    fileName.close(); 
+  }
+  mySerialPln ( "saveIncludesToLittleFS complete." );  
+  
+} // end saveIncludesToLittleFS
+
+
+
+
+
+// Save start/stop times to the Schedule file
+void saveSchedulesToLittleFS()
+{
+  mySerialPln ( "\n\n*************************************" ); 
+  mySerialPln (     "*************************************" ); 
+  mySerialPln (     "***  SAVING schedule to LittleFS ****" );  
+  mySerialPln (     "*************************************\n" ); 
+  
+  File fileName = FileFS.open ( SCHEDULE_FILE_NAME, "w" ); 
+  if ( ! fileName )   // Schedule file for writing could not open ??
+  {              
+    mySerialP ( "Could not open the schedule file " );  mySerialPln ( SCHEDULE_FILE_NAME ); 
+  }
+  else
+  {
+    for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+    {       
+      mySerialP ( "\n*** saveSchedulesToLittleFS Schedule " ); mySerialP ( scheduleDex ); mySerialPln ( " ***" ); 
+      printSchedule ( scheduleDex );  
+
+      for ( int dayDex = 0; dayDex < NUMBER_OF_DAYS; dayDex++ )
+      {
+        mySerialP ( ">Writing " );  mySerialP ( dayDex );    mySerialP ( ": " );  
+        mySerialP ( startTime [scheduleDex][dayDex] ); mySerialP ( ", " ); mySerialPln ( stopTime [scheduleDex][dayDex] );  
+        
+        fileName.println ( String ( startTime [scheduleDex][dayDex] ) ); fileName.println ( String ( stopTime [scheduleDex][dayDex] ) ); 
+      }
+    }
+    fileName.close(); 
+  }
+  mySerialPln ( "saveSchedulesToLittleFS complete." );  
+  
+} // end saveSchedulesToLittleFS
+
+
+
+
+
+// Print out the current data values of the Includes for each Schedule
+void printIncludes()
+{
+  mySerialPln ( "printIncludes data..." );  
+#if STOP_VERBOSE_PRINTING
+  return;
+#endif
+
+  // Go through each SCHEDULE
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+  {
+    // Then print for each SONOFF
+    mySerialP ( "*** printIncludes Schedule " ); mySerialP ( scheduleDex ); mySerialPln ( " ***" ); 
+    for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+    {
+      //mySerialP ( "includeLarry:   " ); mySerialPln ( includeLarry  [scheduleDex] ); 
+      mySerialP ( "include SONOFF " ); mySerialP ( includeButtonName [SONOFFdex] ) ; mySerialP ( " " ); 
+      mySerialPln ( includeSONOFFinThisSchedule [scheduleDex][SONOFFdex] ); 
+    }
+  }
+  mySerialPln();  
+  
+} // end printIncludes
+
+
+
+
+
+// Print out the start/stop/local Time we are working with for each Schedule
+void printSchedule ( int scheduleDex )
+{
+  mySerialP ( "printSchedule(" ); mySerialP ( scheduleDex ); mySerialPln ( ") called..." ); 
+#if STOP_VERBOSE_PRINTING
+  return;
+#endif
+                               // Lots of confusion around Day indexes - beware!
+  
+  int today = weekday() - 1;   // using TimeLib, weekday() starts on Sunday. Blynk starts on Monday. Duh. 
+  if ( today == 0 ) today = 7; // Sunday, Bloody Sunday
+
+  long localTime = hour() * 60 * 60 + minute() * 60 + second(); 
+  
+  for ( int dayDex = 0; dayDex < 7; dayDex++ )
+  {
+    mySerialP ( "StartTime " ); mySerialP ( dayDex+1 ); mySerialP ( " " ); mySerialP ( dayOfWeek [dayDex] ); mySerialP ( " " ); 
+    hhmmss ( startTime [scheduleDex][dayDex] ); mySerialP ( " - " ); mySerialP ( startTime [scheduleDex][dayDex] ); 
+    
+    bool haveValidTime;  
+    haveValidTime = ! ( startTime [scheduleDex][dayDex] == -1 || startTime [scheduleDex][dayDex] == stopTime [scheduleDex][dayDex] );
+    if ( ! haveValidTime ) mySerialP ( " not" ); mySerialPln ( " set" ); 
+
+    if ( dayDex == ( today - 1 ) )
+    {
+      mySerialP ( "LocalTime " ); mySerialP ( dayDex+1 ); mySerialP ( " " ); mySerialP ( dayOfWeek [dayDex] ); mySerialP ( " " ); 
+      hhmmss ( localTime); mySerialP ( " - " ); mySerialP ( localTime ); mySerialPln( " <====" );  
+    }
+    
+    mySerialP ( "StopTime  " ); mySerialP ( dayDex+1 ); mySerialP ( " " ); mySerialP ( dayOfWeek [dayDex] ); mySerialP ( " " ); 
+    haveValidTime = ! ( stopTime [scheduleDex][dayDex] == -1 || startTime [scheduleDex][dayDex] == stopTime [scheduleDex][dayDex] );
+    hhmmss ( stopTime [scheduleDex][dayDex] ); mySerialP ( " - " ); mySerialP ( stopTime [scheduleDex][dayDex] ); 
+    if ( ! haveValidTime ) mySerialP ( " not" ); mySerialPln ( " set" ); 
+
+  }
+} // end printSchedule
+
+
+
+
+
+// Adjust UTC time to local time (called once in Setup) ans set up NTP frequency
+void setupAndSyncBlynkRTC()
+{  
+  BlynkRTC.begin(); 
+  
+  mySerialP ( "setupAndSyncBlynkRTC pre-setup time:  " );  printLocalTime ( 1 ); mySerialPln(); 
+  
+  // Change to local time from UTC
+  daylightOffset_sec = 1 * 60 * 60; // DST offset of one hour in seconds
+  configTime ( estOffset_sec, daylightOffset_sec, "pool.ntp.org", "time.nist.gov" );   
+
+  // Set NTP time sync frequency
+  setSyncInterval ( NTP_SYNC_INTERVAL );        // Sync interval in seconds 
+
+  mySerialP ( "setupAndSyncBlynkRTC post-setup time: " );  printLocalTime ( 1 ); mySerialPln(); 
+  mySerialPln();  
+  
+} // end setupAndSyncBlynkRTC
+
+
+
+
+
+// Print fully formatted date and time to Serial (selector = 1) or to TelNetStream (selector = 2)
+void printLocalTime( int selector )
+{
+#if ESP32 // use ESP32 Core Time library
+  //long elapsedTimeStart = micros(); 
+  struct tm timeinfo;
+  if ( ! getLocalTime ( &timeinfo ) )  // getLocalTime is in core ESP32. Need an ESP8266 workaround some day
+  {
+    mySerialPln ( "Failed to obtain time" );
+    return;
+  }
+  if ( selector == 1 )
+    mySerialPfmt ( &timeinfo, "%A, %B %d %Y %H:%M:%S" );
+//    Serial.printf ( "%A, %B %d %Y %H:%M:%S", &timeinfo ); // Serial.printf for the data structure DOES NOT WORK!
+#if USE_TELNET
+  else
+    TelnetStream.print ( &timeinfo, "%A, %B %d %Y %H:%M:%S" );
+#endif
+
+#elif ESP8266 // getLocalTime is in core ESP32. Need an ESP8266 workaround 
+  String message = "";
+  if ( hour()   < 10 ) message = " ";
+  message = message + String ( hour() )   + ":";
+  if ( minute() < 10 ) message = message  + " "; 
+  message = message + String ( minute() ) + ":";  
+  if ( second() < 10 ) message = message  + " ";  
+  message = message + String ( second() ); 
+
+  message = message + " on " + String ( month() ) + "/" + String ( day() ) + "/" + String ( year() );  
+
+  if ( selector == 1 ) mySerialP ( message );  
+#if USE_TELNET
+  else TelnetStream.print ( message ); 
+#endif // end USE_YELNET
+
+#endif // end ESP8266/ESP32
+
+} // end printLocalTime
+
+
+
+
+
+// Utility to print out HH:MM:SS of INT time of day in seconds
+void hhmmss ( int timeInSeconds )
+{
+  //long elapsedTimeStart = micros(); 
+  int seconds   = timeInSeconds % 60; 
+  timeInSeconds = timeInSeconds / 60;
+  int minutes   = timeInSeconds % 60; 
+  timeInSeconds = ( timeInSeconds - minutes ) / 60;
+  int hours     = timeInSeconds; 
+  if ( hours   < 10 ) mySerialP ( " " ); mySerialP ( hours );   mySerialP ( ":" ); 
+  if ( minutes < 10 ) mySerialP ( "0" ); mySerialP ( minutes ); mySerialP ( ":" ); 
+  if ( seconds < 10 ) mySerialP ( "0" ); mySerialP ( seconds ); 
+  
+} // end hhmmss
+
+
+
+
+
+// Display a rotating day-by-day schedule on the Display Widget... SUN - MON - TUE - ...
+int revolvingDisplayDay = 1; // allows refreshDisplay to cycle through each day on the Display Time Widget ( 1 = Monday ) 
+
+void refreshDisplay ()
+{
+  uint32_t tinyTimer = millis();  
+  
+  mySerialP ( "\nrefreshDisplay called: " ); printLocalTime ( 1 ); mySerialPln(); 
+
+  const char tzone[] = "AmericaNew_York";  // For use in loading up Time Input Widgets
+
+
+  // Display the current day's schedule on the Input Widget
+  int today = weekday() - 1;   // using TimeLib, weekday() starts on Sunday. Blynk starts on Monday. Duh. 
+  if ( today == 0 ) today = 7; // Sunday, Bloody Sunday
+  String dayOfWeekStringToday = String ( today );  
+  String dayOfWeekString = String ( revolvingDisplayDay );    // revolvingDisplayDay starts at 1;  index starts at 0
+  bool haveValidTimes; 
+  
+  mySerialP ( "in refreshDisplay, today is = " ); mySerialP ( today );  
+  mySerialP ( ", also showing day # " ); mySerialPln ( revolvingDisplayDay );  
+  
+
+  // LOOP I UPDATES THE INCLUDE BUTTONS AND THE INPUT START/STOP TIME
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+  {      
+    mySerialP ( "*** refreshDisplay I:  Today & Includes in Sched: " ); mySerialP ( scheduleDex ); mySerialP ( "   *** " ); 
+    hhmmss ( startTime [scheduleDex][today-1] ); mySerialP ( " " );  
+    hhmmss ( stopTime  [scheduleDex][today-1] ); mySerialP ( " *** " );  
+
+    // Update the Include Buttons for each SONOFF in this Schedule
+    for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+    {
+      //mySerialP ( includeLarry  [scheduleDex] ); mySerialP ( " " ); 
+      mySerialP ( includeSONOFFinThisSchedule [scheduleDex][SONOFFdex] ); mySerialP ( " " ); 
+      
+      // DISPLAY THE INCLUDE BUTTONS CORRECTLY
+      int toggle;
+      if ( includeSONOFFinThisSchedule[scheduleDex][SONOFFdex] ) toggle = 1; else toggle = 0;  
+      
+      Blynk.virtualWrite ( includeButtonVpin[scheduleDex][SONOFFdex], toggle );
+    }
+    mySerialPln();  
+
+
+    // DISPLAY THE CURRENT-DAY SCHEDULE ON THE INPUT WIDGET [x][0]
+    haveValidTimes = ! ( ( startTime [scheduleDex][today-1] == -1 )                  // no set START time
+                      || ( stopTime  [scheduleDex][today-1] == -1 )                          // OR no set STOP time
+                      || ( startTime [scheduleDex][today-1] == stopTime [scheduleDex][today-1] ) ); // OR START = STOP times
+    if ( haveValidTimes )
+    {                     // Show real start/stop times and day of week
+      Blynk.virtualWrite ( timeWidgetVpin [scheduleDex][0], 
+                           startTime [scheduleDex][today-1], stopTime [scheduleDex][today-1],tzone, dayOfWeekStringToday ); 
+    } 
+    else
+    {                     // Show Zeros and day of week
+      Blynk.virtualWrite ( timeWidgetVpin [scheduleDex][0], 0, 0, tzone, dayOfWeekStringToday );     
+    }
+  } // end of LOOP I UPDATES THE INCLUDE BUTTONS AND THE INPUT START/STOP TIME
+
+
+  // LOOP II UPDATES THE DISPLAY START/STOP TIME SO THEY LOOK MORE SYNCED FROM SCHEDULE 1 TO SCHEDULE 2
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+  {      
+    mySerialP ( "*** refreshDisplay II: Rotating Schedules in Sched: " ); mySerialP ( scheduleDex ); mySerialP ( " *** " ); 
+    mySerialP ( revolvingDisplayDay ); mySerialP ( " " ); mySerialP ( dayOfWeek[revolvingDisplayDay-1] ); mySerialP ( " *** " ); 
+    hhmmss ( startTime [scheduleDex][revolvingDisplayDay-1] ); mySerialP ( " " );  
+    hhmmss ( stopTime  [scheduleDex][revolvingDisplayDay-1] ); mySerialPln();  
+
+    
+    // DISPLAY THE (ROTATING) DAY-OF-WEEK SCHEDULE ON THE DISPLAY WIDGET [x][1]
+    haveValidTimes = ! ( ( startTime [scheduleDex][revolvingDisplayDay-1] == -1 )        // no set START time
+                      || ( stopTime  [scheduleDex][revolvingDisplayDay-1] == -1 )        // OR no set STOP time
+                      || ( startTime [scheduleDex][revolvingDisplayDay-1] == stopTime [scheduleDex][revolvingDisplayDay-1] ) ); // OR START = STOP times
+
+    if ( haveValidTimes ) // Schedule good to display
+    {                     // Show real start/stop times and day of week
+      Blynk.virtualWrite ( timeWidgetVpin [scheduleDex][1],  // [1] => DISPLAY time widget
+                           startTime [scheduleDex][revolvingDisplayDay-1], stopTime [scheduleDex][revolvingDisplayDay-1], 
+                           tzone, dayOfWeekString ); 
+    } 
+    else                  // No time set yet for this schedule
+    {                     // Show Zeros and day of week
+      Blynk.virtualWrite ( timeWidgetVpin [scheduleDex][1], 0, 0, tzone, dayOfWeekString ); // [1] => DISPLAY time widget  
+    }
+  } // end of LOOP II UPDATES THE DISPLAY START/STOP TIME SO THEY LOOK MORE SYNCED FROM SCHEDULE 1 TO SCHEDULE 2 TO SCHEDULE 3
+  
+
+  // Revolve to next day --- Revolve to beginning of week 
+  if ( revolvingDisplayDay >= 7 ) revolvingDisplayDay = 1; else revolvingDisplayDay++;
+
+
+  mySerialPf1 ( "refreshDisplay done... in %d ms.\n", millis() - tinyTimer );  
+  
+} // end refreshDisplay
+
+
+
+
+
+// Turn OFF SONOFFs a few times to make sure (cannot read the actual SONOFF from here)
+void turnSONOFFoff()
+{
+  mySerialP ( "\n*** Turning SONOFF OFF *** #" ); mySerialPln ( repeatedSwitchingCycles[scheduleDexToSwitchOFFfrom] ); 
+  mySerialP (   "*** SONOFF OFF Schedule " ); mySerialP ( scheduleDexToSwitchOFFfrom ); mySerialPln ( " ***" );   
+
+  // Turn OFF any SONOFF that is included in this schedule
+  for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+  {
+    //if ( includeCurly  [scheduleDexToSwitchOFFfrom] ) bridgeToSONOFFs.virtualWrite ( BRIDGED_CURLY_VPIN,   OFF ); 
+    if ( includeSONOFFinThisSchedule[scheduleDexToSwitchOFFfrom][SONOFFdex] )
+    {
+      mySerialP ( includeButtonName[SONOFFdex] ); mySerialPln ( " goes OFF" );  
+      bridgeToSONOFFs.virtualWrite ( bridgedSONOFFVpins[SONOFFdex], OFF ); 
+    }
+  }
+
+  repeatedSwitchingCycles[scheduleDexToSwitchOFFfrom]++; 
+  if ( repeatedSwitchingCycles[scheduleDexToSwitchOFFfrom] < SWITCH_REPEAT_CYCLES )
+  {
+    // Set a timer to return here and turn device OFF again
+    repeatedOnOffCycleID = myTimer.setTimeout ( repeatedOnOffCycleDuration, turnSONOFFoff ); 
+  }
+  else
+  {
+    // Stop the repeated OFF settings, set count (for next time) to 0
+    repeatedSwitchingCycles[scheduleDexToSwitchOFFfrom] = 0;  
+  }  
+} // end turnSONOFFoff
+
+
+
+
+
+// Turn ON SONOFFs a few times to make sure (cannot read the actual SONOFF from here)
+void turnSONOFFon()
+{
+  mySerialP ( "\n*** Turning SONOFF ON *** #" ); mySerialPln ( repeatedSwitchingCycles[scheduleDexToSwitchONfrom] ); 
+  mySerialP (   "*** SONOFF ON Schedule " ); mySerialP ( scheduleDexToSwitchONfrom ); mySerialPln ( " ***" );   
+
+  // Turn ON any SONOFF that is included in this schedule
+  for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+  {
+    //if ( includeCurly  [scheduleDexToSwitchONfrom] ) bridgeToSONOFFs.virtualWrite ( BRIDGED_CURLY_VPIN,   ON ); 
+    if ( includeSONOFFinThisSchedule[scheduleDexToSwitchONfrom][SONOFFdex] )
+    {
+      mySerialP ( includeButtonName[SONOFFdex] ); mySerialPln ( " goes ON" );  
+      bridgeToSONOFFs.virtualWrite ( bridgedSONOFFVpins[SONOFFdex], ON ); 
+    }
+  }
+
+  repeatedSwitchingCycles[scheduleDexToSwitchONfrom]++; 
+  if ( repeatedSwitchingCycles[scheduleDexToSwitchONfrom] < SWITCH_REPEAT_CYCLES )
+  {
+    // Set a timer to return here and turn device OFF again
+    repeatedOnOffCycleID = myTimer.setTimeout ( repeatedOnOffCycleDuration, turnSONOFFon ); 
+  }
+  else
+  {
+    // Stop the repeated ON settings, set count (for next time) to 0
+    repeatedSwitchingCycles[scheduleDexToSwitchONfrom] = 0;  
+  }  
+} // end turnSONOFFon
+
+
+
+
+
+// Handles the (three) Include Buttons for the (three) SONOFFs
+// Handles the Start/Stop time input, too
+// BLYNK_WRITE_DEFAULT GETS CALLED WHEN THERE IS NO SPECIFIC BLYNK_WRITE FOR THAT VIRTUAL PIN
+// This makes it a flexible - and programmable - receiver
+BLYNK_WRITE_DEFAULT() 
+{
+  // THE VIRTUAL PIN THAT SENT THE MESSAGE TO BLYNK
+  int writeVpin = request.pin; 
+  
+  // *************************************************************************************
+  mySerialP ( "\nBLYNK_WRITE_DEFAULT received a signal from V");
+  mySerialPln ( writeVpin );
+
+  // Print all parameter values for debugging
+  int paramNo = 0;
+  for ( auto i = param.begin(); i < param.end(); ++i ) 
+  {
+    mySerialP ( "     " ); 
+    mySerialP ( "* param " ); mySerialP ( paramNo ); mySerialP ( " = " ); mySerialPln ( i.asString() );  
+    paramNo++;     
+  }
+  mySerialP ( "     " ); 
+  mySerialPln ( "*****\n" );  
+  // *************************************************************************************
+  
+  bool madeIncludesChange = false; // Tracks if any Includes set
+  bool madeScheduleChange = false; // Tracks if any Scheuled Start/Stop times set
+  bool anyDaysSelected    = false; // Tracks if any days of Week set
+
+  bool foundButton = false; 
+  // Check all SCHEDULES' Vpins for Includes, then Schedule changes
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+  {
+    mySerialP ( "*** BLYNK_WRITE_DEFAULT looking for Button from Schedule " ); 
+    mySerialP ( scheduleDex ); mySerialPln ( " ***" ); 
+
+    // Look for a push on a SONOFF Include button for THIS Schedule
+    for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ )
+    {
+      mySerialP ( "    looking for Include Button " ); mySerialPln ( includeButtonName[SONOFFdex] ); 
+      if ( writeVpin == ( includeButtonVpin[scheduleDex][SONOFFdex] ) ) 
+      {
+        int includeYesNo = param[0].asInt(); // 1 if include  0 if exclude
+        
+        mySerialP ( "   * Setting " ); mySerialP ( includeButtonName[SONOFFdex] ); 
+        mySerialP ( " to " ); mySerialPln ( includeYesNo );  
+        if ( includeYesNo == 1 ) 
+          //includeLarry[scheduleDex] = true; 
+          includeSONOFFinThisSchedule[scheduleDex][SONOFFdex] = true; 
+        else 
+          includeSONOFFinThisSchedule[scheduleDex][SONOFFdex] = false; 
+          
+        madeIncludesChange = true;  
+        SONOFFstate[scheduleDex] = DONT_KNOW;
+
+        foundButton = true; break;  
+      }
+      if ( foundButton ) break;
+    } // end loop for each of this schedule's Include buttons
+      
+    if ( ! foundButton ) mySerialPln ( "    now looking for schedule changes." );  
+    
+    // Now check all SCHEDULES for new start/stop times
+    if ( ! foundButton )
+    if ( writeVpin == ( timeWidgetVpin [scheduleDex][0] ) ) // [0] => SET schedule widget
+    {
+      TimeInputParam inputTime(param);
+      mySerialP ( "Have Schedule Change Vpin for schedule " ); mySerialPln ( scheduleDex ); 
+
+      String timeMessage;
+      timeMessage = "Start: "   + String ( inputTime.getStartHour() ) + ":"; 
+      if ( inputTime.getStartMinute() < 10 ) timeMessage = timeMessage + "0"; 
+      timeMessage = timeMessage + String ( inputTime.getStartMinute() ) + ":"; 
+      if ( inputTime.getStartSecond() < 10 ) timeMessage = timeMessage + "0"; 
+      timeMessage = timeMessage + String ( inputTime.getStartSecond() ); 
+      mySerialPln ( timeMessage ); 
+      
+      timeMessage = "Stop:  "   + String ( inputTime.getStopHour() ) + ":"; 
+      if ( inputTime.getStopMinute() < 10 ) timeMessage = timeMessage + "0"; 
+      timeMessage = timeMessage + String ( inputTime.getStopMinute() ) + ":"; 
+      if ( inputTime.getStopSecond() < 10 ) timeMessage = timeMessage + "0"; 
+      timeMessage = timeMessage + String ( inputTime.getStopSecond() ); 
+      mySerialPln ( timeMessage ); 
+      
+      long inputStartTime, inputStopTime;
+      inputStartTime = inputStopTime = -1; // Set to -1 to see if it changed
+  
+      bool dayOfWeekSelected[7] = { false, false, false, false, false, false, false }; // Monday = 1 in Blynkland
+      
+      // Process Start Time
+      if ( inputTime.hasStartTime() )
+      {
+        inputStartTime = inputTime.getStartHour() * 60 * 60 + inputTime.getStartMinute() * 60 + inputTime.getStartSecond(); 
+        madeScheduleChange = true;
+      }
+      else if ( inputTime.isStartSunrise() ) mySerialPln ( "Start at sunrise - ignored" );
+      else if ( inputTime.isStartSunset() )  mySerialPln ( "Start at sunset - ignored" );
+
+
+      // Process stop time
+      if ( inputTime.hasStopTime() )
+      {
+        inputStopTime = inputTime.getStopHour() * 60 * 60 + inputTime.getStopMinute() * 60 + inputTime.getStopSecond(); 
+        madeScheduleChange = true; 
+      }
+      else if ( inputTime.isStopSunrise() ) mySerialPln ( "Stop at sunrise - ignored" );
+      else if ( inputTime.isStopSunset() )  mySerialPln ( "Stop at sunset - ignored" );
+
+
+      // Debugging only
+      if ( inputStartTime == -1 ) mySerialPln ( "Didn't get a good start time" );
+      if ( inputStopTime  == -1 ) mySerialPln ( "Didn't get a good stop time" ); 
+
+
+      // Process timezone
+      // Timezone is already added to start/stop time
+      mySerialPln ( String ( "Time zone: " ) + inputTime.getTZ() );
+
+
+      // Get timezone offset (in seconds)
+      mySerialPln ( String ( "Time zone offset: ") + inputTime.getTZ_Offset() );
+
+
+      // Process selected Days of Week
+      // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+      for ( int dayDex = 1; dayDex <= 7; dayDex++ ) 
+      {
+        if ( inputTime.isWeekdaySelected(dayDex) )    // InputTime returns 1-7
+        {
+          mySerialPln ( String ( "Day " ) + dayDex + " is selected" );
+          dayOfWeekSelected [dayDex-1] = true;         // array take 0-6
+          anyDaysSelected = true; 
+        }
+      }
+
+      // Save changes to data sructure if any were made FOR THIS SCHEDULE
+      if ( madeScheduleChange && anyDaysSelected )
+      {    
+        mySerialPln ( "Schedule changed. Updating schedule data." ); 
+        // Copy the input Start/Stop times into the arrays for days of week
+        for ( int dayDex = 0; dayDex < 7; dayDex++ )
+        {
+          if ( dayOfWeekSelected [dayDex] )
+          {
+            if ( inputStartTime != -1 ) startTime [scheduleDex][dayDex] = inputStartTime; 
+            if ( inputStopTime  != -1 ) stopTime  [scheduleDex][dayDex] = inputStopTime;
+          }
+        }
+      }
+      // Found a schedule change button
+      foundButton = true; 
+    } // end of SET_SCHEDULE_A/B_VPIN section
+
+    if ( foundButton ) break; 
+    
+  } // end of scheduleDex loop checking for WriteVpins
+
+    
+  
+  // Now check to see if someone hit the Reboot code (unimplemented)
+  if ( ! foundButton ) 
+  {
+    // Check for Reboot signal one day
+    mySerialPln ( "*** DEFAULT_BLYNK_WRITE call Ignored this schedule ***" );  
+  }
+  else
+  {
+    // Save changes to FILE if any were made in EITHER schedule
+    if ( madeScheduleChange && anyDaysSelected )
+    {    
+      mySerialPln ( "Schedules changed. Saving to file." );  
+      saveSchedulesToLittleFS(); 
+    } 
+    else mySerialPln ( "No schedule changes found." );  
+
+  
+    if ( madeIncludesChange )
+    {
+      mySerialPln ( "Includes changed. Saving to file," );  
+      saveIncludesToLittleFS();  
+    }
+    else mySerialPln ( "No Includes changes found." );  
+  }
+} //end BLYNK_WRITE_DEFAULT
+
+
+
+
+
+// Easy way to reboot the Control Device 
+BLYNK_WRITE ( UPDATE_VPIN )
+{
+  String anything = param[0].asString(); 
+  mySerialP ( "\n\nUPDATE LABEL INPUT with value  = " ); mySerialPln ( anything );  
+
+  if ( anything == "RESET" || anything == "REBOOT" || anything == "REFRESH"
+    || anything == "reset" || anything == "reboot" || anything == "refresh" 
+    || anything == "Reset" || anything == "Reboot" || anything == "Refresh" ) 
+  {
+    mySerialPln ( " \n REBOOTING \n\n" );  
+    delay ( 5000 );  
+    ESP.restart();      
+  }
+} // end BLYNK_WRITE ( UPDATE_VPIN )
+
+
+
+
+
+// Need to know the previous state: known, unknown, turned on or off my CTRL, for example
+// Don't want random turning on or off without hitting a change command
+// RUNS ON A TIMER ONLY
+void checkForAction()
+{
+  uint32_t tinyTimer = millis();  
+  
+  mySerialP ( "\n******************************************************\ncheckForAction: " ); 
+  printLocalTime ( 1 ); mySerialPln (); 
+
+  // today runs from 1 to 7. 1 = Monday, 7 = Sunday [Note: weekday() runs from 1-7 with 1=Sunday]
+  int today = weekday() - 1;   // using TimeLib, weekday() starts on Sunday. Blynk starts on Monday. Duh. 
+  if ( today == 0 ) today = 7; // Sunday, Bloody Sunday
+  
+  mySerialP ( "in checkForAction, today is " ); mySerialPln ( today );  
+
+  printIncludes();  
+
+  // Each schedule is independent
+  // Check each schedule to see if we are in the ON or OFF areas
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+  {      
+    mySerialP ( "*** checkForAction Schedule " ); mySerialP ( scheduleDex ); mySerialPln ( " ***" ); 
+
+    printSchedule ( scheduleDex ); 
+
+    bool haveValidTimes; // -1 means time not yet set - ignore;  duplicate times = not yet set - ignore
+    haveValidTimes = ! ( startTime [scheduleDex][today-1] == -1 || stopTime [scheduleDex][today-1] == -1 
+                      || startTime [scheduleDex][today-1] == stopTime [scheduleDex][today-1] );
+  
+    if ( haveValidTimes ) //If we have valid times - check to see if we should be ON or OFF for this schedule
+    {
+      bool betweenTimes, crossMidnight; 
+    
+      long localTime; 
+      localTime = hour() * 60 * 60 + minute() * 60 + second(); // Are we betweent the two times (in either order!)
+      if ( localTime >= min( startTime [scheduleDex][today-1], stopTime  [scheduleDex][today-1] )
+        && localTime <= max( startTime [scheduleDex][today-1], stopTime  [scheduleDex][today-1] ) ) 
+      betweenTimes = true; else betweenTimes = false; 
+    
+      if ( startTime [scheduleDex][today-1] > stopTime [scheduleDex][today-1] ) // If Stop < Start, we keep lights on across midnight
+      crossMidnight = true; else crossMidnight = false;  
+    
+      mySerialP ( "betweenTimes  = " ); mySerialPln ( betweenTimes ); 
+      mySerialP ( "crossMidnight = " ); mySerialPln ( crossMidnight ); 
+    
+      if ( ( betweenTimes && ! crossMidnight ) || ( crossMidnight && ! betweenTimes ) )
+      { // ON time
+        mySerialP ( ">In ON Time window with SONOFFstate[" ); mySerialP ( scheduleDex ); mySerialP ( "] = " ); 
+        mySerialP ( SONOFFstate[scheduleDex] ); 
+
+        // Color the Input Time Widget RED while we are in ON time
+        Blynk.setProperty ( timeWidgetVpin [scheduleDex][0], "color", IN_ON_TIME_COLOR );  // Color of the SET time widget, not the title
+
+        // Turn SONOFFS ON if they're not already ON
+        if ( SONOFFstate[scheduleDex] != ON ) 
+        {
+          mySerialPln ( " [turn on included SONOFFS]" );  
+          scheduleDexToSwitchONfrom = scheduleDex;            // Tells the switching routines which schedule they're looking at
+          repeatedSwitchingCycles[scheduleDexToSwitchONfrom] = 0;     // Counts the attempts to switch the SONOFF this cycle
+          turnSONOFFon(); 
+          SONOFFstate[scheduleDexToSwitchONfrom] = ON;  
+        }
+        else mySerialPln ( " [no action needed]" );  
+      }
+      else
+      { // OFF time
+        mySerialP ( ">In OFF Time window with SONOFFstate[" ); mySerialP ( scheduleDex ); mySerialP ( "] = " ); 
+        mySerialP ( SONOFFstate[scheduleDex] ); 
+
+        // Color the Input Time Widget GREEN while we are in OFF time
+        Blynk.setProperty ( timeWidgetVpin [scheduleDex][0], "color", IN_OFF_TIME_COLOR );  // Color of the SET time widget, not the title
+
+        // Turn SONOFFS OFF if they're not already OFF
+        if ( SONOFFstate[scheduleDex] != OFF )
+        {
+          mySerialPln ( " [turn off included SONOFFS]" );  
+          scheduleDexToSwitchOFFfrom = scheduleDex;          // Tells the switching routines which schedule they're looking at 
+          repeatedSwitchingCycles[scheduleDexToSwitchOFFfrom] = 0;   // Counts the attempts to switch the SONOFF this cycle
+          turnSONOFFoff(); 
+          SONOFFstate[scheduleDexToSwitchOFFfrom] = OFF;  
+        }
+        else mySerialPln ( " [no action needed]" );  
+      }
+    }
+    else // stoptime or start time not yet set
+    {
+      mySerialPln ( " Stop or Start times not set - onward" ); 
+    }
+  }
+  
+  mySerialPf1 ( "checkForAction completed in %d ms.\n", millis() - tinyTimer ); 
+  mySerialPln ( "******************************************************\n" ); 
+  
+#if USE_TELNET
+  TelnetStream.print ( "\ncheckForAction in <" ); TelnetStream.print ( SKETCH_NAME ); 
+  TelnetStream.print ( "> WiFi.status() = " ); TelnetStream.print ( WiFi.status() );  
+  TelnetStream.print ( ": " ); printLocalTime ( 2 ); TelnetStream.println();  
+#endif   
+
+} // end checkForAction
+
+
+
+
+
+// We re-initialize all the Widgets on boot-up 
+// DEBUG_INITIALIZE_BLYNK_WIDGETS = true prints out timing while initializing everything - - - 9 seconds total!  
+
+// Set up the STATIC (one time) colors and static labels (updateBlynkApp handles the dynamic data)
+void initializeBlynkWidgets()
+{
+  mySerialPln ( "\ninitializeBlynkWidgets() called..." );
+  
+#if DEBUG_INITIALIZE_BLYNK_WIDGETS
+  int timerDex = 0; 
+  uint32_t timestamp[30];
+  timestamp[timerDex] = millis(); // How long does this take??
+#else // does simple timestamp for end of routine reporting
+  uint32_t timestamp[1];
+  timestamp[0] = millis();  
+#endif
+
+  // Initialize Input Time Widgets with label and color [0] = SET widget, [1] = DISPLAY widget
+  for ( int scheduleDex = 0; scheduleDex < NUMBER_OF_SCHEDULES; scheduleDex++ )
+  {
+    // Set up labels for the Start/Stop Time Widgets for the schedules 
+    Blynk.setProperty ( timeWidgetVpin [scheduleDex][0], "label", scheduleWidgetLabel [scheduleDex][0] );  // [0] => SET widget
+    // Color is set in refreshDisplay - per ON time or oFF time
+    
+    Blynk.setProperty ( timeWidgetVpin [scheduleDex][1], "label", scheduleWidgetLabel [scheduleDex][1] );  // [1] = DISPLAY widget  
+    Blynk.setProperty ( timeWidgetVpin [scheduleDex][1], "color", BLYNK_GREEN );       // Color of the time, not the title
+  }
+
+#if DEBUG_INITIALIZE_BLYNK_WIDGETS
+  timerDex++;
+  timestamp[timerDex] = millis(); 
+  mySerialP ( "\ninitializeBlynkWidgets OPEN " ); mySerialP ( timerDex ); mySerialP ( ": " ); 
+  mySerialP ( timestamp[timerDex] - timestamp[timerDex-1] ); mySerialPln ( " ms." );  
+#endif
+
+#if USE_BLYNK_HEARTBEAT
+  // Set up heartbeat label if we use it
+  Blynk.setProperty ( HEARTBEAT_VPIN,            "label", "Working" );  
+#endif
+
+  // Set up Include button labels for each schedule
+  for ( int scheduleDex = 0; scheduleDex <  NUMBER_OF_SCHEDULES; scheduleDex++ ) 
+  {
+    // Set up each Include Button for this schedule
+    for ( int SONOFFdex = 0; SONOFFdex < NUMBER_OF_SONOFFS; SONOFFdex++ ) 
+    {
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "label", includeButtonName[SONOFFdex] );   // Button name
+      
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "onlabel",  INCLUDE_BUTTON_ONLABEL );      // Label when ON
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "offLabel", INCLUDE_BUTTON_OFFLABEL );     // Label when OFF
+      
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "onColor",  INCLUDE_BUTTON_ONCOLOR );      // Type color when ON
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "offColor", INCLUDE_BUTTON_OFFCOLOR );     // Type color when OFF
+      
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "onBackColor",  INCLUDE_BUTTON_ONBACKCOLOR );  // Background color when ON
+      Blynk.setProperty ( includeButtonVpin[scheduleDex][SONOFFdex], "offBackColor", INCLUDE_BUTTON_OFFBACKCOLOR ); // Background color when OFF
+
+#if DEBUG_INITIALIZE_BLYNK_WIDGETS
+      timerDex++;
+      timestamp[timerDex] = millis(); 
+      mySerialP ( "\ninitializeBlynkWidgets LOOP " ); mySerialP ( timerDex ); mySerialP ( ": " ); 
+      mySerialP ( timestamp[timerDex] - timestamp[timerDex-1] ); mySerialPln ( " ms." );  
+#endif
+    }
+  }
+  // Don't forget to label the HIDDEN reset button
+  Blynk.setProperty ( UPDATE_VPIN, "label", UPDATE_WIDGET_LABEL ); 
+
+#if DEBUG_INITIALIZE_BLYNK_WIDGETS
+  // This takes too long
+  timerDex++;
+  timestamp[timerDex] = millis(); 
+  mySerialP ( "\ninitializeBlynkWidgets TOTS " ); mySerialP ( timerDex ); mySerialP ( ": " ); 
+  mySerialP ( timestamp[timerDex] - timestamp[0] ); mySerialPln ( " ms.\n" );  
+#endif
+
+  mySerialP ( "...initializeBlynkWidgets() completed in " ); mySerialP ( millis() - timestamp[0] ); mySerialPln ( " ms.\n");
+  
+} // end initializeBlynkWidgets
+
