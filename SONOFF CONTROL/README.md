@@ -57,5 +57,3 @@ See also https://github.com/khoih-prog/Blynk_WM for the Blynk WiFi Manager libra
 
 See Andreas Spiess on YouTube for his OTA episodes. This one refers to ESP32, but is also applicable to ESP8266/SONOFF.
 https://youtu.be/1pwqS_NUG7Q
-
-
