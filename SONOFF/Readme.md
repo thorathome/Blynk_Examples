@@ -24,7 +24,7 @@ Arduino IDE requires
 * Arduino ESP core installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
-* Several #include files placed in a folder in your library directory, downloaded for edit and use from this repository
+* Several #include Helper Files placed in a folder in your library directory, downloaded for edit and use from this repository
 * * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
 * * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
 * * MY_BLYNK_WIFIMANAGER_SETUP_SSL.h - edit in you own preferences for standard Blynk_WiFiManager setup
