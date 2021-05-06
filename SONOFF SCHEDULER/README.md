@@ -1,4 +1,4 @@
-**THIS IS WIP. LOADED SKETCH WORKS, STILL NEEDS POLIOSHING  **
+**THIS IS WIP. LOADED SKETCH WORKS, STILL NEEDS POLISHING  **
 
 The Arduino/Blynk sketch SONOFF_SCHEDULER.ino is an **OTA-enabled, multi-device SONOFF Scheduling system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
@@ -19,6 +19,7 @@ This sketch demonstrates several Blynk, Blynk_WiFiManager, and Arduino IDE featu
 For each Schedule, the Blynk App wants to see...
 * TWO Blynk Time Input Widgets, one for entering schedule info, the other for displaying the week's schedule
 * ONE for EACH SONOFF Blynk Styled Button to Include/not-include that SONOFF in this Schedule
+* Blynk WidgetRTC
 * (Optional) Blynk Text Input Widget (force a Reboot)
 * (Virtual Pins are hardcoded into the sketch) 
 * (Assumes all the SONOFFs are on one Blynk Authcode)
@@ -29,6 +30,8 @@ Arduino IDE requires
 * Arduino ESP core installed (for the ESP8266-based SONOFFs)
 * **Blynk master library 0.6.x (not the 1.0.0-beta version) installed**
 * Blynk_WiFiManager library installed
+* TimeLib library installed
+* Blynk's WidgetRTC.h library installed
 * Several #include files placed in a folder in your library directory, downloaded for edit and use from this repository
 * * MY_WIFI_CREDENTIALS.h - edit in your WiFi SSIDs and Passwords
 * * MY_BLYNK_CREDENTIALS.h - edit in your Blynk Authcodes 
