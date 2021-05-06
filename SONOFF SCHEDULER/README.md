@@ -1,4 +1,4 @@
-**THIS IS WIP. SKETCH NOT YET LOADED.  **
+**THIS IS WIP. LOADED SKETCH WORKS, STILL NEEDS POLIOSHING  **
 
 The Arduino/Blynk sketch SONOFF_SCHEDULER.ino is an **OTA-enabled, multi-device SONOFF Scheduling system** using the powerful BlynkSimpleESP8266_SSL_WM WiFiManager (WM) libraries for ESP8266. 
 
