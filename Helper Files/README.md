@@ -1,3 +1,4 @@
+Helper Files README  (WIP)
 I use these files to simplify repeated code in my sketches. 
 
 To use
@@ -14,7 +15,7 @@ To use
 * * MY_SERIAL_PRINTS.h - helpers for Serial.print
 * * OTABlynkTelNet.h or OTABlynk.h - Spiess' (slightly modified) OTA and OTA/TelNetStream code (See below for more info)
 
-
+```
 // ----------------------------  SAMPLE CODE --------------------------------
 // OTA and TelNetStream code below from from Andreas Spiess on YouTube channel.  
 #define USE_OTA true
@@ -52,4 +53,4 @@ To use
 #include "MY_BLYNK_CREDENTIALS.h"  // #defines MY_BLYNK_SERVER and MY_xxx_AUTHCODE
 #include "MY_ESP_LED_BUILTINS.h"   // #defines LED_BUILTIN_HIGH and LOW for uniform use across ESP32 and ESP8266 devices
 #include "MY_BLYNK_COLORS.h"       // #defines a bunch of handy Blynk colors
-
+```
