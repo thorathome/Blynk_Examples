@@ -29,11 +29,11 @@
 
 
 /* Comment out the credentials you do not use as regularly...
-#define MY_WIFI_SSID "Virus-Vault"                        // network SSID (name)
-#define MY_WIFI_PASSWORD "TwoFourSixEight2468!"  // network password
+#define MY_WIFI_SSID "Virus-Vault"                       // network SSID (name)
+#define MY_WIFI_PASSWORD "TwoFourSixEight2468!"          // network password
 
-#define MY_WIFI_SSID "MyAndroidPhone"                          // network SSID (name)
-#define MY_WIFI_PASSWORD "AndroidPassword66$"                // network password
+#define MY_WIFI_SSID "MyAndroidPhone"                    // network SSID (name)
+#define MY_WIFI_PASSWORD "AndroidPassword66$"            // network password
 */
 
 /*
