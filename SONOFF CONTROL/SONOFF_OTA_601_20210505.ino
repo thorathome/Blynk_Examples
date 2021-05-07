@@ -108,6 +108,7 @@ https://youtu.be/1pwqS_NUG7Q
 
 
 
+//My Helper Files
 #include "MY_WIFI_CREDENTIALS.h"   // #defines MY_WIFI_SSID/2 AND MY_WIFI_PASSWORD/2
 #include "MY_BLYNK_CREDENTIALS.h"  // #defines MY_BLYNK_SERVER and MY_xxx_AUTHCODE
 #include "MY_ESP_LED_BUILTINS.h"   // #defines LED_BUILTIN_HIGH and _LOW for uniform use across devices
@@ -378,7 +379,7 @@ void setup()
 
 
   // Set up OTA
-  setupOTA();
+  initializeOTA();
 
 
   // Read Label widget's deviceLabel from LittleFS or EEPROM
@@ -432,7 +433,7 @@ void loop()
 
 
 // Set up OTA for ESP8266 and ESP32 if requested by USE_OTA (Does nothing if not requested)
-void setupOTA()
+void initializeOTA()
 {
 #if USE_OTA
   // Set up OTA
