@@ -26,7 +26,7 @@ Under IFTTT's Webhooks documentation is your IFTTT KEY with some simple instruct
 **You will also need the name of your IFTTT Applet** which consumes the POST and does something with it. (I love Google Sheets!)
 
 I hope it's helpful, have also posted this code on my Github. 
-8/
+*/
 
 
 
