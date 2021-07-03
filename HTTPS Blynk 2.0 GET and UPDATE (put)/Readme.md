@@ -42,7 +42,7 @@ I use the general blynk.cloud domain without issues.
 I tried both Content types for the HTTP GETs: "text/plain", 
 and "application/x-www-form-urlencoded". Both work. No noted change in elapsed runtimes.  
 
-I have also posted these sketches in Blynk COmmunity
+I have also posted these sketches in Blynk Community
 [https://community.blynk.cc/t/webhook-widget/54152/30](https://community.blynk.cc/t/webhook-widget/54152/30)
 
 Hope this helps the cause. 
