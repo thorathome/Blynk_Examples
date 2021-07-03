@@ -1,6 +1,7 @@
-Date 20 June 2021
+Posted 20 June 2021
+Updated 3 July 2021
 
-Blynkers. I am porting my ESP32/8266 Blynk apps to the new Blynk, learning as I go.
+Blynkers. I am porting my ESP32 Blynk apps to the new Blynk, learning as I go. (Any ESP8266 help would be appreciated.)
 
 However, I have used **Blynk's Webhook widgets** to POST measurements and operating info to IFTTT for observation, debugging and data analysis.  (The ESP32/8266 did a virtualWrite to a Webhook widget, which then POSTed the info to an IFTTT Applet.) I have an IFTTT account with several IFTTT Applets that receive POSTs from Blynk Webhook widgets. Most then write that data to Google Sheets. **It's a great way to analyze data produced by the ESPs, AND to debug OTA devices running in the wild.**  
 
