@@ -30,57 +30,75 @@ I hope it's helpful, have also posted this code on my Github.
 
 
 
-    #define USE_JSON true
-    //#define USE_JSON false
+#define USE_JSON_FOR_IFTTT true
+//#define USE_JSON_FOR_IFTTT false
 
-    #include <HTTPClient.h>
+#include <HTTPClient.h>
+#define HTTP_CODE_OK 200  // Good HTTP return code
 
-    // This is YOUR IFTTT Webhooks KEY (not Blynk's)
-    #define MY_IFTTT_KEY    "kjdhphw973ihei7heehih" // from Webhooks doc in IFTTT when you have an IFTTT account
-    // This is YOUR IFTTT Applet that your Blynk sketch will POST to (I use SONOFFs a lot)
-    #define MY_IFTTT_APPLET "SONOFF_Signal"         // from IFTTT Applet which consumes the webhook POST
+#include "MY_IFTTT_CREDENTIALS.h"           
 
-    // Very helpful article on HTTP GET and POST 
-    // https://randomnerdtutorials.com/esp32-http-get-post-arduino/#http-post
+//#define MY_IFTTT_KEY    "included"           // from Webhooks doc in IFTTT when you have an IFTTT account
+#define MY_IFTTT_APPLET MY_IFTTT_SONOFF_APPLET // from IFTTT Applet which consumes the webhook POST
 
-    void postToIFTTT() 
-    {
-      mySerialPln ( "\npostToIFTTT called..." ); 
+// Very helpful article on HTTP GET and POST 
+// https://randomnerdtutorials.com/esp32-http-get-post-arduino/#http-post
 
-      // Set up an HTTP client object for the IFTTT POST 
-      HTTPClient IFTTTpost;  
-      
-      // Server name URL
-      String IFTTTserverName = "https://maker.ifttt.com/trigger/" + String ( MY_IFTTT_APPLET ) + "/with/key/" + String ( MY_IFTTT_KEY );
-      IFTTTpost.begin ( IFTTTserverName );  //Specify request destination, open HTTP connecction
-      Serial.print ( "\n\nIFTTT ServerName <" ); Serial.print ( IFTTTserverName ); Serial.println ( ">" ); 
+void postToIFTTT ( const String& message ) 
+{
+  Serial.println ( "\npostToIFTTT called with message <" + message + ">" ); 
 
-    #if USE_JSON
-      IFTTTpost.addHeader ( "Content-Type", "application/json" );
+  // Set up an HTTP client object for the IFTTT POST 
+  HTTPClient IFTTTpost;  
+  
+  // Server name URL
 
-      // IFTTT's JSON payload is { "value1" : "xx", "value2" : "mm", "value3" : "gg" }
-      // IFTTTrequest = "{ \"value1\" : \"Yo_Bud\", \"value2\" : \"mm\", \"value3\" : \"gg" }";
-      String IFTTTrequest = "{ \"value1\" : \"Yo Bud - JSON POST\" }"; // spaces permitted !
-      Serial.println (     "JSON POST is     <" ); mySerialP ( IFTTTrequest ); mySerialPln ( ">" ); 
+  String IFTTTserverName = "https://maker.ifttt.com/trigger/" + String ( MY_IFTTT_APPLET ) + "/with/key/" + String ( MY_IFTTT_KEY );
 
-    #else
-      //IFTTTpost.addHeader ( "Content-Type", "text/plain" );
-      IFTTTpost.addHeader ( "Content-Type", "application/x-www-form-urlencoded" );
+  long elapsed = millis();  
+  
+#if ESP32
+  IFTTTpost.begin ( IFTTTserverName );  //Specify request destination, open HTTP connecction
+#elif ESP8266
+  WiFiClientSecure client;
+  IFTTTpost.begin ( client, IFTTTserverName );  //Specify request destination, open HTTP connecction
+#endif
 
-      // IFTTT's text/plain payload is "?&value1=val1&value2=val2&value3=val3"
-      String IFTTTrequest = "?&value1=Hey_Man-text-POST";  // no spaces allowed 
-      Serial.print (     "text POST is     <" ); Serial.print ( IFTTTrequest ); Serial.println ( ">" ); 
+  Serial.print ( " IFTTT ServerName <" ); Serial.print ( IFTTTserverName ); Serial.println ( ">" ); 
 
-    #endif
-      
-      int IFTTTreturnCode = IFTTTpost.POST ( IFTTTrequest );     // POST the request to IFTTT
-      Serial.print ( "POST return code: " ); Serial.println ( IFTTTreturnCode ); 
+#if USE_JSON_FOR_IFTTT
+  IFTTTpost.addHeader ( "Content-Type", "application/json" );
 
-      if ( IFTTTreturnCode > 0 ) //Check the returning code (200 is AOK)
-      {
-        String payload = IFTTTpost.getString();   //Get the request response payload
-        Serial.print ( "Payload response from IFTTT POST: " ); Serial.println ( payload );  
-      }
-      IFTTTpost.end();   //Close HTTP connection
-      
-    } // end postToIFTTT
+  // IFTTT's JSON payload is { "value1" : "xx", "value2" : "mm", "value3" : "gg" }
+  // IFTTTrequest = "{ \"value1\" : \"Yo_Bud\", \"value2\" : \"mm\", \"value3\" : \"gg" }";
+  String IFTTTrequest = "{ \"value1\" : \"" + String ( message ) + "\" }"; // spaces permitted !
+  Serial.print ( "  JSON POST is    <" ); Serial.print ( IFTTTrequest ); Serial.println ( ">" ); 
+
+#else
+  //IFTTTpost.addHeader ( "Content-Type", "text/plain" );
+  IFTTTpost.addHeader ( "Content-Type", "application/x-www-form-urlencoded" );
+
+  // IFTTT's text payload is "?&value1=val1&value2=val2&value3=val3"
+  String IFTTTrequest = "?&value1=Hey_Man-text-POST";  // no spaces allowed 
+  Serial.print ( "  text POST is     <" ); Serial.print ( IFTTTrequest ); Serial.println ( ">" ); 
+
+#endif
+  
+  int IFTTTreturnCode = IFTTTpost.POST ( IFTTTrequest );     // POST the request to IFTTT
+
+  Serial.print ( " elapsed time in ms = " ); Serial.println ( millis() - elapsed ); 
+
+  Serial.print ( "  return code: " ); Serial.println ( IFTTTreturnCode ); 
+
+  if ( IFTTTreturnCode > 0 ) //Check the returning code (200 is AOK)
+  {
+    String payload = IFTTTpost.getString();   //Get the request response payload
+    Serial.println ( "  response string: <" + payload + ">" );  
+  }
+  
+  IFTTTpost.end();   //Close HTTP connection
+  
+} // end postToIFTTT
+
+
+
